@@ -1,10 +1,14 @@
 :root {
-    --bg-glass: rgba(18, 24, 38, 0.85);
-    --border-glass: rgba(255, 255, 255, 0.12);
-    --accent-color: #3b82f6;
-    --accent-hover: #2563eb;
-    --text-main: #f3f4f6;
-    --text-muted: #9ca3af;
+    --bg-panel: rgba(15, 23, 42, 0.88);
+    --bg-card: rgba(30, 41, 59, 0.7);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --sidebar-width: 360px;
 }
 
 * {
@@ -14,136 +18,191 @@
     font-family: 'Vazirmatn', sans-serif;
 }
 
-body, html, .app-container {
+body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
+    background: #020617;
+    color: var(--text-primary);
 }
 
-.app-container {
+.app-layout {
     display: flex;
+    width: 100vw;
+    height: 100vh;
     position: relative;
 }
 
-/* Sidebar استایل تار و شیک */
+/* Sidebar مدرن با انیمیشن باز و بسته شدن */
 .sidebar {
-    width: 340px;
-    height: 100vh;
-    background: var(--bg-glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-left: 1px solid var(--border-glass);
-    color: var(--text-main);
-    z-index: 1000;
+    width: var(--sidebar-width);
+    height: 100%;
+    background: var(--bg-panel);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    padding: 20px;
-    gap: 20px;
-    overflow-y: auto;
-    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -5px 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar.collapsed {
+    transform: translateX(100%);
+}
+
+/* دکمه Toggle سایدبار روی نقشه */
+.sidebar-toggle-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1001;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
 .sidebar-header {
+    padding: 18px 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid var(--border-glass);
-    padding-bottom: 15px;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.logo-icon {
-    font-size: 24px;
-    color: var(--accent-color);
-}
-
-.panel-section {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border-glass);
-    border-radius: 12px;
-    padding: 14px;
-}
-
-.panel-section h3 {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* رادیوباتن‌ها و چک‌باکس‌های سفارشی */
-.layer-radio, .layer-checkbox {
+.sidebar-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    transition: all 0.2s;
-    padding: 6px 8px;
-    border-radius: 6px;
 }
 
-.layer-radio:hover, .layer-checkbox:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-/* جستجو و دکمه‌های مسیریابی */
-.search-box {
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
     display: flex;
-    gap: 6px;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* استایل آکاردئونی برای دسته‌بندی ۲۰ ماژول */
+.accordion-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+.accordion-header {
+    padding: 12px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    user-select: none;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.accordion-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.accordion-content {
+    padding: 12px;
+    display: none;
+    border-top: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.accordion-item.active .accordion-content {
+    display: block;
+}
+
+/* کنترل‌های داخل فرم‌ها */
+.form-group {
     margin-bottom: 10px;
 }
 
-.search-box input {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-glass);
+.form-group label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+.input-style {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
     border-radius: 6px;
-    padding: 8px 10px;
+    padding: 8px 12px;
     color: #fff;
     font-size: 12px;
+    outline: none;
 }
 
-.search-box button, .btn-route {
-    background: var(--accent-color);
+.input-style:focus {
+    border-color: var(--primary);
+}
+
+.btn {
+    width: 100%;
+    padding: 9px;
     border: none;
-    color: white;
-    padding: 8px 12px;
     border-radius: 6px;
+    background: var(--primary);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
-    font-size: 12px;
     transition: background 0.2s;
-}
-
-.search-box button:hover, .btn-route:hover {
-    background: var(--accent-hover);
-}
-
-.routing-controls {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 6px;
+    margin-top: 6px;
 }
 
-.btn-danger {
-    background: #ef4444;
-}
-.btn-danger:hover {
-    background: #dc2626;
-}
+.btn:hover { background: var(--primary-hover); }
+.btn-success { background: var(--accent-green); }
+.btn-danger { background: var(--accent-red); }
 
-.color-green { color: #10b981; }
-.color-red { color: #f43f5e; }
-
-.route-info-box {
-    margin-top: 10px;
-    font-size: 12px;
-    color: #38bdf8;
-}
-
-#map {
+.map-container {
     flex: 1;
-    height: 100vh;
+    height: 100%;
+    position: relative;
+}
+
+/* Responsive برای دستگاه‌های موبایل */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 55vh;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        border-radius: 20px 20px 0 0;
+    }
+    .sidebar.collapsed {
+        transform: translateY(100%);
+    }
 }
