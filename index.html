@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سامانه پیشرفته GIS و پایش متمرکز</title>
+    <title>سامانه جامع جئواینت | GEOINT Radar System</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -12,24 +12,35 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     
+    <!-- CesiumJS 3D Library -->
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Widgets/Widgets.css" rel="stylesheet">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Cesium.js"></script>
+
     <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
     <div class="app-layout">
-        <!-- دکمه باز و بستن پنل اصلی -->
+        <!-- دکمه مدیریت پنل -->
         <button id="sidebar-toggle" class="sidebar-toggle-btn" title="مدیریت پنل">
             <i class="fa-solid fa-bars"></i>
         </button>
 
-        <!-- Sidebar آکاردئونی شیشه‌ای -->
+        <!-- Sidebar آکاردئونی جئواینت -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fa-solid fa-earth-americas text-accent"></i> سامانه GIS متمرکز</h2>
+                <h2><i class="fa-solid fa-crosshairs radar-icon"></i> سامانه جامع جئواینت</h2>
             </div>
 
             <div class="sidebar-content">
                 
+                <!-- حالت نمایش ۲D / ۳D / Dual -->
+                <div class="view-mode-selector">
+                    <button id="btn-mode-2d" class="view-btn active"><i class="fa-solid fa-map"></i> ۲D Leaflet</button>
+                    <button id="btn-mode-split" class="view-btn"><i class="fa-solid fa-columns"></i> دو نقشه همزمان</button>
+                    <button id="btn-mode-3d" class="view-btn"><i class="fa-solid fa-globe"></i> ۳D Cesium</button>
+                </div>
+
                 <!-- ۱. ناوبری و مسیریابی -->
                 <div class="accordion-item active">
                     <div class="accordion-header">
@@ -48,10 +59,27 @@
                     </div>
                 </div>
 
-                <!-- ۲. ترافیک واقعی‌زمان -->
+                <!-- ۲. تحلیل‌های ارتفاعی، توپوگرافی و دیدگاه -->
                 <div class="accordion-item">
                     <div class="accordion-header">
-                        <span><i class="fa-solid fa-car"></i> ۲. ترافیک واقعی‌زمان</span>
+                        <span><i class="fa-solid fa-mountain-sun"></i> ۲. تحلیل ارتفاعی و شعاع دید</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <button id="btn-elevation-profile" class="btn btn-cyan"><i class="fa-solid fa-chart-area"></i> رسم پروفایل ارتفاعی زمین</button>
+                        <div class="form-group" style="margin-top:10px;">
+                            <label>شعاع حریم/دیدگاه (متر):</label>
+                            <input type="number" id="input-buffer-radius" class="input-style" value="10000" placeholder="مثلا 5000 متر" />
+                        </div>
+                        <button id="btn-draw-buffer" class="btn"><i class="fa-solid fa-bullseye"></i> رسم شعاع پوشش عملیاتی</button>
+                        <div id="analysis-info-box" class="info-box" style="margin-top:10px;"></div>
+                    </div>
+                </div>
+
+                <!-- ۳. ترافیک واقعی‌زمان -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span><i class="fa-solid fa-car"></i> ۳. ترافیک واقعی‌زمان</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content">
@@ -71,14 +99,18 @@
                     </div>
                 </div>
 
-                <!-- ۳. هواشناسی و اقلیم -->
+                <!-- ۴. هواشناسی و اقلیم -->
                 <div class="accordion-item">
                     <div class="accordion-header">
-                        <span><i class="fa-solid fa-cloud-sun-rain"></i> ۳. هواشناسی و اقلیم</span>
+                        <span><i class="fa-solid fa-cloud-sun-rain"></i> ۴. هواشناسی و اقلیم</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content">
                         <label class="layer-checkbox">
+                            <input type="checkbox" id="chk-weather-enable">
+                            <span>فعال‌سازی استعلام کلیک هواشناسی</span>
+                        </label>
+                        <label class="layer-checkbox" style="margin-top:8px;">
                             <input type="checkbox" id="chk-weather-radar">
                             <span>رادار بارش زنده (RainViewer)</span>
                         </label>
@@ -87,15 +119,15 @@
                             <span>پوشش ابر جهان (OWM)</span>
                         </label>
                         <div id="weather-info-box" class="info-box" style="margin-top: 10px;">
-                            جهت مشاهده اطلاعات کامل هواشناسی روی نقشه کلیک کنید.
+                            پس از فعال‌سازی تیک بالا، با کلیک روی هر نقطه از نقشه، وضعیت هواشناسی استعلام خواهد شد.
                         </div>
                     </div>
                 </div>
 
-                <!-- ۴. زلزله و بلایای طبیعی -->
+                <!-- ۵. زلزله و بلایای طبیعی -->
                 <div class="accordion-item">
                     <div class="accordion-header">
-                        <span><i class="fa-solid fa-volcano"></i> ۴. زلزله و بلایای طبیعی</span>
+                        <span><i class="fa-solid fa-volcano"></i> ۵. زلزله و بلایای طبیعی</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content">
@@ -117,10 +149,10 @@
                     </div>
                 </div>
 
-                <!-- ۵. تنظیمات و کلیدهای API -->
+                <!-- ۶. تنظیمات و کلیدهای API -->
                 <div class="accordion-item">
                     <div class="accordion-header">
-                        <span><i class="fa-solid fa-sliders"></i> ۵. تنظیمات و کلیدهای API</span>
+                        <span><i class="fa-solid fa-sliders"></i> ۶. تنظیمات و کلیدهای API</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content">
@@ -139,22 +171,34 @@
             </div>
         </aside>
 
-        <!-- نقشه اصلی -->
-        <main class="map-container" id="map">
-            <!-- منوی شناور بیس‌لایر (گوشه بالا سمت چپ) -->
-            <div class="base-map-floater">
-                <button id="btn-base-map-toggle" class="floater-btn" title="تغییر نقشه پایه">
-                    <i class="fa-solid fa-layer-group"></i>
+        <!-- کانتینر دو نقشه (۲D و ۳D) -->
+        <main class="map-viewport-container" id="map-container">
+            
+            <!-- نقشه دوبعدی Leaflet -->
+            <div id="map-2d" class="map-pane">
+                <div class="base-map-floater-2d">
+                    <button id="btn-base-map-toggle-2d" class="floater-btn" title="تغییر بیس‌مپ ۲D">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </button>
+                    <div id="base-map-dropdown-2d" class="floater-dropdown"></div>
+                </div>
+
+                <button id="btn-print-map" class="floater-btn print-btn-floater" title="چاپ نقشه">
+                    <i class="fa-solid fa-print"></i>
                 </button>
-                <div id="base-map-dropdown" class="floater-dropdown"></div>
             </div>
 
-            <!-- دکمه اختصاصی پرینت نقشه -->
-            <button id="btn-print-map" class="floater-btn print-btn-floater" title="چاپ نقشه">
-                <i class="fa-solid fa-print"></i>
-            </button>
+            <!-- نقشه سه‌بعدی CesiumJS -->
+            <div id="map-3d" class="map-pane">
+                <div class="base-map-floater-3d">
+                    <button id="btn-base-map-toggle-3d" class="floater-btn" title="تغییر بیس‌مپ ۳D">
+                        <i class="fa-solid fa-globe"></i>
+                    </button>
+                    <div id="base-map-dropdown-3d" class="floater-dropdown right-aligned"></div>
+                </div>
+            </div>
 
-            <!-- نوار وضعیت مختصات در مرکز پایین صفحه -->
+            <!-- نوار وضعیت مختصات مشترک -->
             <div class="status-bar-center" id="status-bar">
                 <div class="coord-badge">
                     <span>DD:</span> <strong id="coord-dd">0.00000, 0.00000</strong>
@@ -166,10 +210,11 @@
                     <span>UTM:</span> <strong id="coord-utm">Z0 N | E:0 N:0</strong>
                 </div>
             </div>
+
         </main>
     </div>
 
-    <!-- Leaflet Scripts -->
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script type="module" src="js/app.js"></script>
