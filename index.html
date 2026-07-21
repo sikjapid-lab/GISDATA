@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Leaflet & Plugin CSS -->
+    <!-- Leaflet & Leaflet Draw CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     
@@ -31,7 +31,7 @@
             <div class="sidebar-content">
                 
                 <!-- ۱. ناوبری و مسیریابی -->
-                <div class="accordion-item">
+                <div class="accordion-item active">
                     <div class="accordion-header">
                         <span><i class="fa-solid fa-route"></i> ۱. مسیریابی و جستجو</span>
                         <i class="fa-solid fa-chevron-down"></i>
@@ -44,7 +44,7 @@
                         <button id="btn-set-start" class="btn btn-success"><i class="fa-solid fa-location-dot"></i> تعیین مبدأ روی نقشه</button>
                         <button id="btn-set-end" class="btn"><i class="fa-solid fa-flag-checkered"></i> تعیین مقصد روی نقشه</button>
                         <button id="btn-clear-route" class="btn btn-danger"><i class="fa-solid fa-trash"></i> پاک‌سازی مسیر</button>
-                        <div id="route-info" class="info-box"></div>
+                        <div id="route-info" class="info-box" style="margin-top:10px;"></div>
                     </div>
                 </div>
 
@@ -87,15 +87,15 @@
                     </div>
                 </div>
 
-                <!-- ۴. گام جدید: زلزله و بلایای طبیعی (USGS & GDACS) -->
-                <div class="accordion-item active">
+                <!-- ۴. زلزله و بلایای طبیعی -->
+                <div class="accordion-item">
                     <div class="accordion-header">
                         <span><i class="fa-solid fa-volcano"></i> ۴. زلزله و بلایای طبیعی</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content">
                         <label class="layer-checkbox">
-                            <input type="checkbox" id="chk-disaster-earthquakes" checked>
+                            <input type="checkbox" id="chk-disaster-earthquakes">
                             <span>زلزله‌های زنده جهان (USGS 24h)</span>
                         </label>
                         <div class="form-group" style="margin-top: 8px;">
@@ -112,10 +112,10 @@
                     </div>
                 </div>
 
-                <!-- تنظیمات و کلیدهای API -->
+                <!-- ۵. تنظیمات و کلیدهای API -->
                 <div class="accordion-item">
                     <div class="accordion-header">
-                        <span><i class="fa-solid fa-sliders"></i> تنظیمات و کلیدهای API</span>
+                        <span><i class="fa-solid fa-sliders"></i> ۵. تنظیمات و کلیدهای API</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content">
@@ -145,26 +145,26 @@
             </div>
 
             <!-- دکمه اختصاصی پرینت نقشه -->
-            <button id="btn-print-map" class="floater-btn print-btn-floater" title="چاپ و خروجی نقشه">
+            <button id="btn-print-map" class="floater-btn print-btn-floater" title="چاپ نقشه">
                 <i class="fa-solid fa-print"></i>
             </button>
 
-            <!-- نوار وضعیت مختصات دقیق در وسط پایین صفحه -->
+            <!-- نوار وضعیت مختصات در مرکز پایین صفحه -->
             <div class="status-bar-center" id="status-bar">
                 <div class="coord-badge">
-                    <span>DD:</span> <strong id="coord-dd">---</strong>
+                    <span>DD:</span> <strong id="coord-dd">0.00000, 0.00000</strong>
                 </div>
                 <div class="coord-badge">
-                    <span>DMS:</span> <strong id="coord-dms">---</strong>
+                    <span>DMS:</span> <strong id="coord-dms">0°0'0"N, 0°0'0"E</strong>
                 </div>
                 <div class="coord-badge">
-                    <span>UTM:</span> <strong id="coord-utm">---</strong>
+                    <span>UTM:</span> <strong id="coord-utm">Z0 N | E:0 N:0</strong>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Leaflet & Plugins Scripts -->
+    <!-- Leaflet Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script type="module" src="js/app.js"></script>
