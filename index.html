@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -8,29 +9,25 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Leaflet & Leaflet Draw CSS -->
+    <!-- Leaflet & Draw -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     
-    <!-- CesiumJS 3D Library -->
+    <!-- CesiumJS 3D -->
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
 
-    <!-- Chart.js برای رسم نمودار تعاملی ارتفاع -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-    <div class="app-layout">
-        <button id="sidebar-toggle" class="sidebar-toggle-btn" title="مدیریت پنل">
-            <i class="fa-solid fa-bars"></i>
-        </button>
-
+    <div class="app-layout mode-2d" id="app-layout">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fa-solid fa-crosshairs radar-icon"></i> سامانه جامع جئواینت</h2>
+                <h2><i class="fa-solid fa-crosshairs"></i> سامانه جامع جئواینت</h2>
             </div>
 
             <div class="sidebar-content">
@@ -49,7 +46,7 @@
                     <div class="accordion-content">
                         <div class="form-group">
                             <input type="text" id="geo-search-input" class="input-style" placeholder="نام مکان یا شهر..." />
-                            <button id="geo-search-btn" class="btn" style="margin-top:5px;"><i class="fa-solid fa-magnifying-glass"></i> جستجو</button>
+                            <button id="geo-search-btn" class="btn"><i class="fa-solid fa-magnifying-glass"></i> جستجو</button>
                         </div>
                         <button id="btn-set-start" class="btn btn-success"><i class="fa-solid fa-location-dot"></i> تعیین مبدأ روی نقشه</button>
                         <button id="btn-set-end" class="btn"><i class="fa-solid fa-flag-checkered"></i> تعیین مقصد روی نقشه</button>
@@ -58,19 +55,19 @@
                     </div>
                 </div>
 
-                <!-- ۲. تحلیل ارتفاعی -->
+                <!-- ۲. تحلیل ارتفاعی و شعاع دید -->
                 <div class="accordion-item">
                     <div class="accordion-header">
                         <span><i class="fa-solid fa-mountain-sun"></i> ۲. تحلیل ارتفاعی و شعاع دید</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content">
-                        <button id="btn-elevation-profile" class="btn btn-cyan"><i class="fa-solid fa-chart-area"></i> رسم پروفایل ارتفاعی مسیر رسم‌شده</button>
+                        <button id="btn-elevation-profile" class="btn btn-cyan"><i class="fa-solid fa-chart-area"></i> رسم پروفایل ارتفاعی مسیر</button>
                         <div class="form-group" style="margin-top:10px;">
-                            <label>شعاع حریم/دیدگاه (متر):</label>
-                            <input type="number" id="input-buffer-radius" class="input-style" value="10000" />
+                            <label style="font-size:0.8rem;">شعاع حریم / دیدگاه (متر):</label>
+                            <input type="number" id="input-buffer-radius" class="input-style" value="5000" />
                         </div>
-                        <button id="btn-draw-buffer" class="btn"><i class="fa-solid fa-bullseye"></i> رسم شعاع پوشش عملیاتی</button>
+                        <button id="btn-draw-buffer" class="btn"><i class="fa-solid fa-bullseye"></i> محاسبه شعاع پوشش (Buffer)</button>
                         <div id="analysis-info-box" class="info-box" style="margin-top:10px;"></div>
                     </div>
                 </div>
@@ -113,6 +110,9 @@
         </aside>
 
         <main class="map-viewport-container" id="map-container">
+            <button id="sidebar-toggle" class="sidebar-toggle-btn" title="تغییر وضعیت پنل"><i class="fa-solid fa-bars"></i></button>
+
+            <!-- نقشه دو بعدی -->
             <div id="map-2d" class="map-pane">
                 <div class="base-map-floater-2d">
                     <button id="btn-base-map-toggle-2d" class="floater-btn"><i class="fa-solid fa-layer-group"></i></button>
@@ -120,14 +120,15 @@
                 </div>
             </div>
 
+            <!-- نقشه سه بعدی -->
             <div id="map-3d" class="map-pane">
                 <div class="base-map-floater-3d">
                     <button id="btn-base-map-toggle-3d" class="floater-btn"><i class="fa-solid fa-globe"></i></button>
-                    <div id="base-map-dropdown-3d" class="floater-dropdown right-aligned"></div>
+                    <div id="base-map-dropdown-3d" class="floater-dropdown"></div>
                 </div>
             </div>
 
-            <!-- پنل شناور پروفایل ارتفاعی تطبیقی پایین صفحه -->
+            <!-- پنل شناور نمودار ارتفاعی روی نقشه -->
             <div id="elevation-profile-panel" class="elevation-panel" style="display:none;">
                 <div class="elevation-panel-header">
                     <span><i class="fa-solid fa-chart-line"></i> پروفایل ارتفاعی تعاملی (Interactive Elevation Profile)</span>
@@ -136,7 +137,7 @@
                 <div class="elevation-chart-container">
                     <canvas id="elevationChart"></canvas>
                 </div>
-                <div id="elevation-stats" class="elevation-stats-bar">
+                <div class="elevation-stats-bar">
                     <span>حداقل: <b id="stat-min">-</b> متر</span>
                     <span>حداکثر: <b id="stat-max">-</b> متر</span>
                     <span>افزایش ارتفاع: <b id="stat-gain">-</b> متر</span>
