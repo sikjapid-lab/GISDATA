@@ -1,12 +1,9 @@
-/**
- * هسته نقشه‌های ۲D و ۳D، سینک کامل عوارض و پروفایل ارتفاعی تطبیقی
- */
+/* js/map.js */
 let chartInstance = null;
 let profileHoverMarker2D = null;
 let profileHoverEntity3D = null;
 
 export function initMap() {
-    // ۱. بیس‌لایرهای استاندارد ۲D
     const baseMaps2D = {
         "google-sat": {
             name: "گوگل ارث (Google Earth)",
@@ -31,7 +28,7 @@ export function initMap() {
 
     L.control.zoom({ position: 'bottomleft' }).addTo(map2D);
 
-    // ۲. راه‌اندازی ایمن Cesium 3D Globe
+    // راه‌اندازی سه‌بعدی Cesium
     let viewer3D = null;
     let isSyncing2D = false, isSyncing3D = false;
 
@@ -47,6 +44,8 @@ export function initMap() {
                 sceneModePicker: false,
                 navigationHelpButton: false,
                 fullscreenButton: false,
+                infoBox: true, // فعال‌سازی Popup های ۳D
+                selectionIndicator: true,
                 imageryProvider: new Cesium.UrlTemplateImageryProvider({
                     url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
                     maximumLevel: 20
@@ -57,7 +56,7 @@ export function initMap() {
                 viewer3D.terrainProvider = Cesium.createWorldTerrain();
             }
 
-            // همگام‌سازی دوربین ۲D به ۳D
+            // سینک دوربین ۲D به ۳D
             map2D.on('move', () => {
                 if (isSyncing3D || !viewer3D) return;
                 isSyncing2D = true;
@@ -71,7 +70,7 @@ export function initMap() {
                 isSyncing2D = false;
             });
 
-            // همگام‌سازی دوربین ۳D به ۲D
+            // سینک دوربین ۳D به ۲D
             viewer3D.camera.moveEnd.addEventListener(() => {
                 if (isSyncing2D || !viewer3D) return;
                 isSyncing3D = true;
@@ -86,12 +85,12 @@ export function initMap() {
             });
 
             setupBaseMapDropdown3D(viewer3D);
-        } catch (err) {
-            console.warn("خطا در بارگذاری Cesium 3D:", err);
+        } catch (e) {
+            console.warn("خطا در بارگذاری Cesium 3D:", e);
         }
     }
 
-    // ۳. مدیریت ترسیمات ۲D و سینک خودکار به ۳D
+    // لایه عوارض ترسیمی
     const drawnItems = new L.FeatureGroup();
     map2D.addLayer(drawnItems);
 
@@ -109,14 +108,14 @@ export function initMap() {
     });
     map2D.addControl(drawControl);
 
-    // افزودن عوارض ترسیمی به نقشه ۳D
+    // همگام‌سازی کلیه اشکال به ۳D
     map2D.on(L.Draw.Event.CREATED, (e) => {
         const layer = e.layer;
         drawnItems.addLayer(layer);
         syncLayerTo3D(layer, e.layerType, viewer3D);
     });
 
-    // ۴. دکمه و منطق پروفایل ارتفاعی تطبیقی
+    // ثبت رویدادهای پروفایل ارتفاعی
     document.getElementById('btn-elevation-profile')?.addEventListener('click', () => {
         let targetLine = null;
         drawnItems.eachLayer((layer) => {
@@ -141,7 +140,7 @@ export function initMap() {
 
     setupBaseMapDropdown2D(map2D, baseMaps2D);
 
-    // پایش مختصات
+    // به‌روزرسانی مختصات موش‌واره
     map2D.on('mousemove', (e) => {
         const { lat, lng } = e.latlng;
         document.getElementById('coord-dd').innerText = `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
@@ -153,7 +152,7 @@ export function initMap() {
 }
 
 /**
- * همگام‌سازی لایه‌ها از ۲D به ۳D Cesium
+ * انتقال یک‌به‌یک لایه‌ها و اشکال از ۲D به ۳D
  */
 export function syncLayerTo3D(layer, type, viewer3D) {
     if (!viewer3D) return;
@@ -193,19 +192,19 @@ export function syncLayerTo3D(layer, type, viewer3D) {
 }
 
 /**
- * تولید پروفایل ارتفاعی تطبیقی زنده با انیمیشن و Hover متقابل
+ * موتور استعلام آنلاین و ترسیم پروفایل ارتفاعی تعاملی
  */
 async function generateAdaptiveElevationProfile(polylineLayer, map2D, viewer3D) {
     const latlngs = polylineLayer.getLatLngs();
     const samplesCount = 60;
     const interpolatedPoints = [];
-    
-    // ۱. نمونه‌برداری فاصله‌ای روی مسیر
+
     for (let i = 0; i < latlngs.length - 1; i++) {
         const p1 = latlngs[i];
         const p2 = latlngs[i + 1];
-        for (let j = 0; j < samplesCount / (latlngs.length - 1); j++) {
-            const t = j / (samplesCount / (latlngs.length - 1));
+        const steps = Math.ceil(samplesCount / (latlngs.length - 1));
+        for (let j = 0; j < steps; j++) {
+            const t = j / steps;
             const lat = p1.lat + (p2.lat - p1.lat) * t;
             const lng = p1.lng + (p2.lng - p1.lng) * t;
             interpolatedPoints.push({ lat, lng });
@@ -213,9 +212,8 @@ async function generateAdaptiveElevationProfile(polylineLayer, map2D, viewer3D) 
     }
     interpolatedPoints.push({ lat: latlngs[latlngs.length - 1].lat, lng: latlngs[latlngs.length - 1].lng });
 
-    // ۲. استعلام ارتفاع متوالی از API Open-Elevation
     const locations = interpolatedPoints.map(p => ({ latitude: p.lat, longitude: p.lng }));
-    
+
     try {
         const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
             method: 'POST',
@@ -245,14 +243,12 @@ async function generateAdaptiveElevationProfile(polylineLayer, map2D, viewer3D) 
             if (pt.elevation > maxElev) maxElev = pt.elevation;
         });
 
-        // بروزرسانی آمار
         document.getElementById('stat-min').innerText = Math.round(minElev);
         document.getElementById('stat-max').innerText = Math.round(maxElev);
         document.getElementById('stat-gain').innerText = Math.round(totalGain);
         document.getElementById('stat-length').innerText = (totalDist / 1000).toFixed(2);
-        document.getElementById('elevation-profile-panel').style.display = 'block';
+        document.getElementById('elevation-profile-panel').style.display = 'flex';
 
-        // ۳. رسم نمودار با Chart.js و رویداد Hover تطبیقی
         const ctx = document.getElementById('elevationChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
 
@@ -263,8 +259,8 @@ async function generateAdaptiveElevationProfile(polylineLayer, map2D, viewer3D) 
                 datasets: [{
                     label: 'ارتفاع (متر)',
                     data: elevationData,
-                    borderColor: '#00d2ff',
-                    backgroundColor: 'rgba(0, 210, 255, 0.2)',
+                    borderColor: '#0284c7',
+                    backgroundColor: 'rgba(2, 132, 199, 0.25)',
                     fill: true,
                     tension: 0.3,
                     pointRadius: 0,
@@ -283,39 +279,34 @@ async function generateAdaptiveElevationProfile(polylineLayer, map2D, viewer3D) 
                     }
                 },
                 scales: {
-                    x: { title: { display: true, text: 'فاصله (کیلومتر)', color: '#ccc' }, ticks: { color: '#aaa' } },
-                    y: { title: { display: true, text: 'ارتفاع (متر)', color: '#ccc' }, ticks: { color: '#aaa' } }
+                    x: { title: { display: true, text: 'فاصله (کیلومتر)', color: '#94a3b8' }, ticks: { color: '#64748b' } },
+                    y: { title: { display: true, text: 'ارتفاع (متر)', color: '#94a3b8' }, ticks: { color: '#64748b' } }
                 },
                 plugins: { legend: { display: false } }
             }
         });
 
     } catch (e) {
-        console.error("خطا در دریافت داده‌های ارتفاعی:", e);
-        alert("امکان استعلام آنلاین داده‌های ارتفاعی وجود ندارد.");
+        console.error("خطا در استعلام ارتفاع:", e);
+        alert("خطا در دریافت داده‌های ارتفاعی.");
     }
 }
 
-/**
- * بروزرسانی تعاملی مارکر شناور روی هر دو نقشه
- */
 function updateHoverMarkers(lat, lng, elev, map2D, viewer3D) {
-    // ۲D Marker
     if (!profileHoverMarker2D) {
-        profileHoverMarker2D = L.circleMarker([lat, lng], { radius: 7, color: '#ff0055', fillColor: '#fff', fillOpacity: 1 }).addTo(map2D);
+        profileHoverMarker2D = L.circleMarker([lat, lng], { radius: 7, color: '#ef4444', fillColor: '#fff', fillOpacity: 1 }).addTo(map2D);
     } else {
         profileHoverMarker2D.setLatLng([lat, lng]);
     }
 
-    // ۳D Entity
     if (viewer3D) {
         if (!profileHoverEntity3D) {
             profileHoverEntity3D = viewer3D.entities.add({
-                position: Cesium.Cartesian3.fromDegrees(lng, lat, elev + 10),
+                position: Cesium.Cartesian3.fromDegrees(lng, lat, elev + 20),
                 point: { pixelSize: 12, color: Cesium.Color.RED, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 }
             });
         } else {
-            profileHoverEntity3D.position = Cesium.Cartesian3.fromDegrees(lng, lat, elev + 10);
+            profileHoverEntity3D.position = Cesium.Cartesian3.fromDegrees(lng, lat, elev + 20);
         }
     }
 }
