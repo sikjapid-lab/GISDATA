@@ -1,45 +1,20 @@
-/**
- * ماژول ترافیک زنده
- */
-export function initTrafficModule(map) {
-    const googleTrafficLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m@159000000,traffic&hl=fa&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        opacity: 0.8
-    });
+/* js/modules/traffic.js */
+let googleTrafficLayer2D = null;
 
-    document.getElementById('chk-traffic-google')?.addEventListener('change', (e) => {
-        e.target.checked ? map.addLayer(googleTrafficLayer) : map.removeLayer(googleTrafficLayer);
-    });
+export function initTrafficModule(map2D, viewer3D) {
+    const chkGoogle = document.getElementById('chk-traffic-google');
 
-    let tomTomFlowLayer = null;
-    document.getElementById('chk-traffic-tomtom')?.addEventListener('change', (e) => {
+    chkGoogle?.addEventListener('change', (e) => {
         if (e.target.checked) {
-            const apiKey = localStorage.getItem('API_TOMTOM') || '';
-            if (!apiKey) {
-                alert('لطفاً ابتدا TomTom API Key را در بخش تنظیمات وارد کنید.');
-                e.target.checked = false;
-                return;
+            googleTrafficLayer2D = L.tileLayer('https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
+                maxZoom: 21,
+                opacity: 0.7
+            }).addTo(map2D);
+        } else {
+            if (googleTrafficLayer2D) {
+                map2D.removeLayer(googleTrafficLayer2D);
+                googleTrafficLayer2D = null;
             }
-            tomTomFlowLayer = L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/flow/relative-delay/{z}/{x}/{y}.png?key=${apiKey}&style=night`, { maxZoom: 18, opacity: 0.85 });
-            map.addLayer(tomTomFlowLayer);
-        } else if (tomTomFlowLayer) {
-            map.removeLayer(tomTomFlowLayer);
-        }
-    });
-
-    let tomTomIncidentsLayer = null;
-    document.getElementById('chk-traffic-tomtom-incidents')?.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            const apiKey = localStorage.getItem('API_TOMTOM') || '';
-            if (!apiKey) {
-                alert('لطفاً ابتدا TomTom API Key را در بخش تنظیمات وارد کنید.');
-                e.target.checked = false;
-                return;
-            }
-            tomTomIncidentsLayer = L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/incidents/s3/{z}/{x}/{y}.png?key=${apiKey}&style=night`, { maxZoom: 18, opacity: 0.9 });
-            map.addLayer(tomTomIncidentsLayer);
-        } else if (tomTomIncidentsLayer) {
-            map.removeLayer(tomTomIncidentsLayer);
         }
     });
 }
