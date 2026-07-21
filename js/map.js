@@ -1,50 +1,56 @@
-/**
- * پیکربندی و مقداردهی نقشه پایه به همراه تنوع کامل Base Layerها
- */
 export function initMap() {
-    // 1. تعریف بیس‌لایرها (Base Layers)
+    // بیس‌لایرهای تضمین‌شده و پایدار
     const baseMaps = {
-        "OpenStreetMap (استاندارد)": L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }),
-        "CartoDB Positron (روشن/ساده)": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 20,
-            attribution: '&copy; CARTO'
-        }),
-        "CartoDB Dark Matter (تاریک)": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 20,
-            attribution: '&copy; CARTO'
-        }),
-        "Esri World Imagery (تصویر ماهواره‌ای)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            attribution: 'Tiles &copy; Esri'
-        }),
-        "OpenTopoMap (توپوگرافی)": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            maxZoom: 17,
-            attribution: 'Map data: &copy; OSM, SRTM'
-        }),
-        "Stamen Terrain (عوارض زمین)": L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: 'Map tiles by Stamen Design'
-        })
+        "osm": {
+            name: "OpenStreetMap (استاندارد)",
+            layer: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OSM' })
+        },
+        "carto-dark": {
+            name: "CartoDB Dark Matter (تاریک)",
+            layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: 'CARTO' })
+        },
+        "carto-light": {
+            name: "CartoDB Positron (روشن)",
+            layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: 'CARTO' })
+        },
+        "esri-sat": {
+            name: "Esri World Imagery (ماهواره‌ای)",
+            layer: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' })
+        },
+        "opentopo": {
+            name: "OpenTopoMap (توپوگرافی)",
+            layer: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'OTM' })
+        }
     };
 
-    // 2. مقداردهی اولیه نقشه (مختصات پیش‌فرض: ایران - تهران)
     const map = L.map('map', {
         center: [35.6892, 51.3890],
         zoom: 6,
-        layers: [baseMaps["OpenStreetMap (استاندارد)"]] // لایه پیش‌فرض
+        zoomControl: false,
+        layers: [baseMaps["carto-dark"].layer] // پیش‌فرض تاریک و مدرن
     });
 
-    // 3. شیء نگه‌دارنده اورلایرها (جهت توسعه در گام‌های بعدی)
-    const overlayMaps = {};
+    // افزودن کنترل زوم به سمت چپ پایین
+    L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-    // 4. افزودن کنترل‌کننده لایه‌ها به نقشه
-    const layerControl = L.control.layers(baseMaps, overlayMaps, {
-        collapsed: false,
-        position: 'topright'
-    }).addTo(map);
+    // رندر منوی سفارشی در Sidebar
+    const container = document.getElementById('base-layers-container');
+    Object.keys(baseMaps).forEach((key, index) => {
+        const item = baseMaps[key];
+        const label = document.createElement('label');
+        label.className = 'layer-radio';
+        label.innerHTML = `
+            <input type="radio" name="base-layer" value="${key}" ${index === 1 ? 'checked' : ''}>
+            <span>${item.name}</span>
+        `;
+        
+        label.querySelector('input').addEventListener('change', (e) => {
+            Object.keys(baseMaps).forEach(k => map.removeLayer(baseMaps[k].layer));
+            map.addLayer(baseMaps[e.target.value].layer);
+        });
 
-    return { map, layerControl, overlayMaps };
+        container.appendChild(label);
+    });
+
+    return { map };
 }
