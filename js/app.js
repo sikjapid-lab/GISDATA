@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ۵. کلیدهای API
+    // ۵. بارگذاری و ذخیره کلیدهای API در LocalStorage
     const owmInput = document.getElementById('api-owm');
     const tomInput = document.getElementById('api-tomtom');
 
@@ -40,6 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-save-settings')?.addEventListener('click', () => {
         if (owmInput) localStorage.setItem('API_OWM', owmInput.value.trim());
         if (tomInput) localStorage.setItem('API_TOMTOM', tomInput.value.trim());
-        alert('تنظیمات ذخیره شدند.');
+        alert('تنظیمات و کلیدهای API با موفقیت ذخیره شدند.');
     });
 });
