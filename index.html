@@ -7,7 +7,11 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Leaflet & Plugin CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    
     <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -18,7 +22,7 @@
             <i class="fa-solid fa-bars"></i>
         </button>
 
-        <!-- Sidebar آکاردئونی شیشه‌ای (Ultra-Glassmorphism) -->
+        <!-- Sidebar آکاردئونی شیشه‌ای -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2><i class="fa-solid fa-earth-americas text-accent"></i> سامانه GIS متمرکز</h2>
@@ -27,7 +31,7 @@
             <div class="sidebar-content">
                 
                 <!-- ۱. ناوبری و مسیریابی -->
-                <div class="accordion-item active">
+                <div class="accordion-item">
                     <div class="accordion-header">
                         <span><i class="fa-solid fa-route"></i> ۱. مسیریابی و جستجو</span>
                         <i class="fa-solid fa-chevron-down"></i>
@@ -57,7 +61,7 @@
                         </label>
                         <label class="layer-checkbox" style="margin-top: 8px;">
                             <input type="checkbox" id="chk-traffic-tomtom">
-                            <span>ترافیک TomTom Flow (نیازمند API Key)</span>
+                            <span>ترافیک TomTom Flow</span>
                         </label>
                     </div>
                 </div>
@@ -78,12 +82,37 @@
                             <span>پوشش ابر جهان (OWM)</span>
                         </label>
                         <div id="weather-info-box" class="info-box" style="margin-top: 10px;">
-                            جهت مشاهده اطلاعات کامل هواشناسی بر روی هر نقطه از نقشه کلیک کنید.
+                            جهت مشاهده اطلاعات کامل هواشناسی روی نقشه کلیک کنید.
                         </div>
                     </div>
                 </div>
 
-                <!-- بخش تنظیمات کلیدهای API (مدیریت متمرکز بدون هاردکد) -->
+                <!-- ۴. گام جدید: زلزله و بلایای طبیعی (USGS & GDACS) -->
+                <div class="accordion-item active">
+                    <div class="accordion-header">
+                        <span><i class="fa-solid fa-volcano"></i> ۴. زلزله و بلایای طبیعی</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <label class="layer-checkbox">
+                            <input type="checkbox" id="chk-disaster-earthquakes" checked>
+                            <span>زلزله‌های زنده جهان (USGS 24h)</span>
+                        </label>
+                        <div class="form-group" style="margin-top: 8px;">
+                            <label>حداقل بزرگی (ریشتر):</label>
+                            <select id="select-eq-mag" class="input-style">
+                                <option value="all">همه زلزله‌ها</option>
+                                <option value="2.5">بزرگتر از ۲.۵</option>
+                                <option value="4.5">بزرگتر از ۴.۵ (شدید)</option>
+                            </select>
+                        </div>
+                        <div id="disaster-info-box" class="info-box" style="margin-top: 10px;">
+                            تعداد زلزله‌های بارگذاری شده: <b id="eq-count">۰</b>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تنظیمات و کلیدهای API -->
                 <div class="accordion-item">
                     <div class="accordion-header">
                         <span><i class="fa-solid fa-sliders"></i> تنظیمات و کلیدهای API</span>
@@ -98,10 +127,6 @@
                             <label>TomTom API Key:</label>
                             <input type="text" id="api-tomtom" class="input-style" placeholder="مقدار کلید..." />
                         </div>
-                        <div class="form-group">
-                            <label>OpenRouteService API Key:</label>
-                            <input type="text" id="api-ors" class="input-style" placeholder="مقدار کلید..." />
-                        </div>
                         <button id="btn-save-settings" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> ذخیره تنظیمات</button>
                     </div>
                 </div>
@@ -111,25 +136,37 @@
 
         <!-- نقشه اصلی -->
         <main class="map-container" id="map">
-            <!-- منوی شناور انتخاب نقشه‌های پایه در گوشه بالا سمت چپ -->
+            <!-- منوی شناور بیس‌لایر (گوشه بالا سمت چپ) -->
             <div class="base-map-floater">
                 <button id="btn-base-map-toggle" class="floater-btn" title="تغییر نقشه پایه">
                     <i class="fa-solid fa-layer-group"></i>
                 </button>
-                <div id="base-map-dropdown" class="floater-dropdown">
-                    <!-- آیتم‌ها از JS پر می‌شوند -->
-                </div>
+                <div id="base-map-dropdown" class="floater-dropdown"></div>
             </div>
 
-            <!-- نوار وضعیت سیستم‌های مختصات زنده در پایین صفحه -->
-            <div class="status-bar" id="status-bar">
-                <div class="coord-item"><span>WGS84:</span> <strong id="coord-wgs84">---</strong></div>
-                <div class="coord-item"><span>UTM:</span> <strong id="coord-utm">---</strong></div>
+            <!-- دکمه اختصاصی پرینت نقشه -->
+            <button id="btn-print-map" class="floater-btn print-btn-floater" title="چاپ و خروجی نقشه">
+                <i class="fa-solid fa-print"></i>
+            </button>
+
+            <!-- نوار وضعیت مختصات دقیق در وسط پایین صفحه -->
+            <div class="status-bar-center" id="status-bar">
+                <div class="coord-badge">
+                    <span>DD:</span> <strong id="coord-dd">---</strong>
+                </div>
+                <div class="coord-badge">
+                    <span>DMS:</span> <strong id="coord-dms">---</strong>
+                </div>
+                <div class="coord-badge">
+                    <span>UTM:</span> <strong id="coord-utm">---</strong>
+                </div>
             </div>
         </main>
     </div>
 
+    <!-- Leaflet & Plugins Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
