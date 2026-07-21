@@ -1,11 +1,12 @@
 /**
- * هسته نقشه، ابزارهای رسم، تبدیل سیستم‌های مختصات و بیس‌لایرها
+ * هسته نقشه‌های ۲D و ۳D، سینک لحظه‌ای، Google Earth و منوهای بیس‌لایر مجزا
  */
 export function initMap() {
-    const baseMaps = {
+    // ۱. تعریف بیس‌لایرهای استاندارد ۲D و Google Earth
+    const baseMaps2D = {
         "google-sat": {
-            name: "گوگل ماهواره‌ای (Google Satellite)",
-            layer: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 21, attribution: 'Google' })
+            name: "گوگل ارث / ماهواره‌ای (Google Earth)",
+            layer: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 21, attribution: 'Google Earth' })
         },
         "google-hybrid": {
             name: "گوگل هیبرید (Google Hybrid)",
@@ -29,18 +30,75 @@ export function initMap() {
         }
     };
 
-    const map = L.map('map', {
+    // ۲. راه اندازی نقشه ۲D Leaflet
+    const map2D = L.map('map-2d', {
         center: [35.6892, 51.3890],
         zoom: 6,
         zoomControl: false,
-        layers: [baseMaps["google-sat"].layer]
+        layers: [baseMaps2D["google-sat"].layer]
     });
 
-    L.control.zoom({ position: 'bottomleft' }).addTo(map);
+    L.control.zoom({ position: 'bottomleft' }).addTo(map2D);
 
-    // ۱. ابزارهای اندازه گیری و رسم Leaflet Draw
+    // ۳. راه اندازی CesiumJS 3D Globe
+    Cesium.Ion.defaultAccessToken = ''; // استفاده از پروایدرهای عمومی بدون نیاز به توکن
+    const viewer3D = new Cesium.Viewer('map-3d', {
+        animation: false,
+        timeline: false,
+        baseLayerPicker: false,
+        geocoder: false,
+        homeButton: false,
+        sceneModePicker: false,
+        navigationHelpButton: false,
+        fullscreenButton: false,
+        imageryProvider: new Cesium.UrlTemplateImageryProvider({
+            url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+            maximumLevel: 20
+        })
+    });
+
+    // اضافه کردن عوارض ۳D زمین (Terrain)
+    viewer3D.terrainProvider = Cesium.createWorldTerrain();
+
+    // ۴. سینک لحظه‌ای (Synchronization) بین ۲D و ۳D
+    let isSyncing2D = false;
+    let isSyncing3D = false;
+
+    map2D.on('move', () => {
+        if (isSyncing3D) return;
+        isSyncing2D = true;
+
+        const center = map2D.getCenter();
+        const zoom = map2D.getZoom();
+        const height = Math.max(1000, 10000000 / Math.pow(2, zoom - 1));
+
+        viewer3D.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(center.lng, center.lat, height)
+        });
+
+        isSyncing2D = false;
+    });
+
+    viewer3D.camera.moveEnd.addEventListener(() => {
+        if (isSyncing2D) return;
+        isSyncing3D = true;
+
+        const cartographic = Cesium.Cartographic.fromCartesian(viewer3D.camera.position);
+        const lat = Cesium.Math.toDegrees(cartographic.latitude);
+        const lng = Cesium.Math.toDegrees(cartographic.longitude);
+        const height = cartographic.height;
+
+        let zoom = Math.round(Math.log2(10000000 / height)) + 1;
+        zoom = Math.min(Math.max(zoom, 2), 19);
+
+        map2D.setView([lat, lng], zoom, { animate: false });
+
+        isSyncing3D = false;
+    });
+
+    // ۵. ابزار رسم Leaflet Draw
     const drawnItems = new L.FeatureGroup();
-    map.addLayer(drawnItems);
+    map2D.addLayer(drawnItems);
 
     const drawControl = new L.Control.Draw({
         position: 'topleft',
@@ -52,13 +110,11 @@ export function initMap() {
             marker: true,
             circlemarker: false
         },
-        edit: {
-            featureGroup: drawnItems
-        }
+        edit: { featureGroup: drawnItems }
     });
-    map.addControl(drawControl);
+    map2D.addControl(drawControl);
 
-    map.on(L.Draw.Event.CREATED, (e) => {
+    map2D.on(L.Draw.Event.CREATED, (e) => {
         const layer = e.layer;
         drawnItems.addLayer(layer);
         
@@ -72,16 +128,36 @@ export function initMap() {
         }
     });
 
-    // ۲. منوی شناور بیس‌لایر
-    const dropdown = document.getElementById('base-map-dropdown');
-    const toggleBtn = document.getElementById('btn-base-map-toggle');
+    // ۶. مدیریت بیس‌مپ‌های مجزا برای ۲D
+    setupBaseMapDropdown2D(map2D, baseMaps2D);
+
+    // ۷. مدیریت بیس‌مپ‌های مجزا برای ۳D
+    setupBaseMapDropdown3D(viewer3D);
+
+    // پرینت نقشه
+    document.getElementById('btn-print-map')?.addEventListener('click', () => window.print());
+
+    // ۸. پایش زنده مختصات
+    map2D.on('mousemove', (e) => {
+        const { lat, lng } = e.latlng;
+        document.getElementById('coord-dd').innerText = `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
+        document.getElementById('coord-dms').innerText = `${toDMS(lat, 'lat')}, ${toDMS(lng, 'lng')}`;
+        const utm = convertLatLngToUTM(lat, lng);
+        document.getElementById('coord-utm').innerText = `Z${utm.zone}${utm.hemisphere} | E:${Math.round(utm.easting)} N:${Math.round(utm.northing)}`;
+    });
+
+    return { map2D, viewer3D, drawnItems };
+}
+
+function setupBaseMapDropdown2D(map2D, baseMaps) {
+    const dropdown = document.getElementById('base-map-dropdown-2d');
+    const toggleBtn = document.getElementById('btn-base-map-toggle-2d');
 
     if (toggleBtn && dropdown) {
         toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdown.classList.toggle('show');
         });
-
         document.addEventListener('click', () => dropdown.classList.remove('show'));
 
         Object.keys(baseMaps).forEach((key, index) => {
@@ -91,43 +167,53 @@ export function initMap() {
             div.innerHTML = `<i class="fa-solid fa-map"></i> <span>${item.name}</span>`;
             
             div.addEventListener('click', () => {
-                Object.keys(baseMaps).forEach(k => map.removeLayer(baseMaps[k].layer));
-                map.addLayer(item.layer);
-                document.querySelectorAll('.base-item').forEach(el => el.classList.remove('active'));
+                Object.keys(baseMaps).forEach(k => map2D.removeLayer(baseMaps[k].layer));
+                map2D.addLayer(item.layer);
+                dropdown.querySelectorAll('.base-item').forEach(el => el.classList.remove('active'));
                 div.classList.add('active');
             });
 
             dropdown.appendChild(div);
         });
     }
+}
 
-    // ۳. پرینت نقشه
-    document.getElementById('btn-print-map')?.addEventListener('click', () => {
-        window.print();
-    });
+function setupBaseMapDropdown3D(viewer3D) {
+    const dropdown = document.getElementById('base-map-dropdown-3d');
+    const toggleBtn = document.getElementById('btn-base-map-toggle-3d');
 
-    // ۴. پایش زنده مختصات موس (DD, DMS, UTM)
-    map.on('mousemove', (e) => {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
+    const base3DSources = {
+        "google-sat": "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+        "google-hybrid": "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+        "osm": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "carto-dark": "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+    };
 
-        // DD
-        const ddElem = document.getElementById('coord-dd');
-        if (ddElem) ddElem.innerText = `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
+    if (toggleBtn && dropdown) {
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('show');
+        });
+        document.addEventListener('click', () => dropdown.classList.remove('show'));
 
-        // DMS
-        const dmsElem = document.getElementById('coord-dms');
-        if (dmsElem) dmsElem.innerText = `${toDMS(lat, 'lat')}, ${toDMS(lng, 'lng')}`;
+        Object.keys(base3DSources).forEach((key, index) => {
+            const div = document.createElement('div');
+            div.className = `base-item ${index === 0 ? 'active' : ''}`;
+            div.innerHTML = `<i class="fa-solid fa-globe"></i> <span>${key.toUpperCase()} (3D)</span>`;
+            
+            div.addEventListener('click', () => {
+                viewer3D.imageryLayers.removeAll();
+                viewer3D.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+                    url: base3DSources[key],
+                    maximumLevel: 20
+                }));
+                dropdown.querySelectorAll('.base-item').forEach(el => el.classList.remove('active'));
+                div.classList.add('active');
+            });
 
-        // UTM
-        const utmElem = document.getElementById('coord-utm');
-        if (utmElem) {
-            const utm = convertLatLngToUTM(lat, lng);
-            utmElem.innerText = `Z${utm.zone}${utm.hemisphere} | E:${Math.round(utm.easting)} N:${Math.round(utm.northing)}`;
-        }
-    });
-
-    return { map };
+            dropdown.appendChild(div);
+        });
+    }
 }
 
 function toDMS(deg, type) {
