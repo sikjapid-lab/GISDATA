@@ -1,36 +1,27 @@
 /**
- * هسته نقشه‌های ۲D و ۳D، سینک لحظه‌ای و منوهای بیس‌لایر
+ * هسته نقشه‌های ۲D و ۳D، سینک کامل عوارض و پروفایل ارتفاعی تطبیقی
  */
+let chartInstance = null;
+let profileHoverMarker2D = null;
+let profileHoverEntity3D = null;
+
 export function initMap() {
-    // ۱. تعریف بیس‌لایرهای استاندارد ۲D و Google Earth
+    // ۱. بیس‌لایرهای استاندارد ۲D
     const baseMaps2D = {
         "google-sat": {
-            name: "گوگل ارث / ماهواره‌ای (Google Earth)",
-            layer: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 21, attribution: 'Google Earth' })
+            name: "گوگل ارث (Google Earth)",
+            layer: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 21 })
         },
         "google-hybrid": {
             name: "گوگل هیبرید (Google Hybrid)",
-            layer: L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 21, attribution: 'Google' })
-        },
-        "google-streets": {
-            name: "گوگل معابر (Google Streets)",
-            layer: L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 21, attribution: 'Google' })
-        },
-        "google-terrain": {
-            name: "گوگل عوارض زمین (Google Terrain)",
-            layer: L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: 'Google' })
-        },
-        "carto-dark": {
-            name: "CartoDB Dark Matter (تاریک)",
-            layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: 'CARTO' })
+            layer: L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 21 })
         },
         "osm": {
-            name: "OpenStreetMap (استاندارد)",
-            layer: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OSM' })
+            name: "OpenStreetMap",
+            layer: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
         }
     };
 
-    // ۲. راه اندازی نقشه ۲D Leaflet
     const map2D = L.map('map-2d', {
         center: [35.6892, 51.3890],
         zoom: 6,
@@ -40,10 +31,9 @@ export function initMap() {
 
     L.control.zoom({ position: 'bottomleft' }).addTo(map2D);
 
-    // ۳. راه اندازی ایمن CesiumJS 3D Globe (جلوگیری از قفل شدن اسکریپت در صورت عدم بارگذاری CDN)
+    // ۲. راه‌اندازی ایمن Cesium 3D Globe
     let viewer3D = null;
-    let isSyncing2D = false;
-    let isSyncing3D = false;
+    let isSyncing2D = false, isSyncing3D = false;
 
     if (typeof Cesium !== 'undefined') {
         try {
@@ -67,11 +57,10 @@ export function initMap() {
                 viewer3D.terrainProvider = Cesium.createWorldTerrain();
             }
 
-            // سینک از ۲D به ۳D
+            // همگام‌سازی دوربین ۲D به ۳D
             map2D.on('move', () => {
                 if (isSyncing3D || !viewer3D) return;
                 isSyncing2D = true;
-
                 const center = map2D.getCenter();
                 const zoom = map2D.getZoom();
                 const height = Math.max(1000, 10000000 / Math.pow(2, zoom - 1));
@@ -79,46 +68,39 @@ export function initMap() {
                 viewer3D.camera.setView({
                     destination: Cesium.Cartesian3.fromDegrees(center.lng, center.lat, height)
                 });
-
                 isSyncing2D = false;
             });
 
-            // سینک از ۳D به ۲D
+            // همگام‌سازی دوربین ۳D به ۲D
             viewer3D.camera.moveEnd.addEventListener(() => {
                 if (isSyncing2D || !viewer3D) return;
                 isSyncing3D = true;
-
                 const cartographic = Cesium.Cartographic.fromCartesian(viewer3D.camera.position);
                 const lat = Cesium.Math.toDegrees(cartographic.latitude);
                 const lng = Cesium.Math.toDegrees(cartographic.longitude);
-                const height = cartographic.height;
-
-                let zoom = Math.round(Math.log2(10000000 / height)) + 1;
+                let zoom = Math.round(Math.log2(10000000 / cartographic.height)) + 1;
                 zoom = Math.min(Math.max(zoom, 2), 19);
 
                 map2D.setView([lat, lng], zoom, { animate: false });
-
                 isSyncing3D = false;
             });
 
             setupBaseMapDropdown3D(viewer3D);
         } catch (err) {
-            console.warn("خطا در راه اندازی موتور 3D سزیوم:", err);
+            console.warn("خطا در بارگذاری Cesium 3D:", err);
         }
-    } else {
-        console.warn("کتابخانه Cesium یافت نشد. برنامه در حالت 2D اجرا می‌شود.");
     }
 
-    // ۴. ابزار رسم Leaflet Draw
+    // ۳. مدیریت ترسیمات ۲D و سینک خودکار به ۳D
     const drawnItems = new L.FeatureGroup();
     map2D.addLayer(drawnItems);
 
     const drawControl = new L.Control.Draw({
         position: 'topleft',
         draw: {
-            polyline: { metric: true, showLength: true },
-            polygon: { showArea: true, metric: true },
-            circle: { showRadius: true, metric: true },
+            polyline: { metric: true },
+            polygon: { showArea: true },
+            circle: true,
             rectangle: true,
             marker: true,
             circlemarker: false
@@ -127,36 +109,215 @@ export function initMap() {
     });
     map2D.addControl(drawControl);
 
+    // افزودن عوارض ترسیمی به نقشه ۳D
     map2D.on(L.Draw.Event.CREATED, (e) => {
         const layer = e.layer;
         drawnItems.addLayer(layer);
-        
-        if (e.layerType === 'polyline') {
-            const latlngs = layer.getLatLngs();
-            let totalDist = 0;
-            for (let i = 0; i < latlngs.length - 1; i++) {
-                totalDist += latlngs[i].distanceTo(latlngs[i + 1]);
-            }
-            layer.bindPopup(`<b>طول مسیر:</b> ${(totalDist / 1000).toFixed(2)} کیلومتر (${Math.round(totalDist)} متر)`).openPopup();
-        }
+        syncLayerTo3D(layer, e.layerType, viewer3D);
     });
 
-    // ۵. مدیریت بیس‌مپ‌های ۲D
+    // ۴. دکمه و منطق پروفایل ارتفاعی تطبیقی
+    document.getElementById('btn-elevation-profile')?.addEventListener('click', () => {
+        let targetLine = null;
+        drawnItems.eachLayer((layer) => {
+            if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+                targetLine = layer;
+            }
+        });
+
+        if (!targetLine) {
+            alert("لطفاً ابتدا یک مسیر (Polyline) با ابزار رسم روی نقشه ترسیم کنید.");
+            return;
+        }
+
+        generateAdaptiveElevationProfile(targetLine, map2D, viewer3D);
+    });
+
+    document.getElementById('btn-close-elevation')?.addEventListener('click', () => {
+        document.getElementById('elevation-profile-panel').style.display = 'none';
+        if (profileHoverMarker2D) map2D.removeLayer(profileHoverMarker2D);
+        if (profileHoverEntity3D && viewer3D) viewer3D.entities.remove(profileHoverEntity3D);
+    });
+
     setupBaseMapDropdown2D(map2D, baseMaps2D);
 
-    // پرینت نقشه
-    document.getElementById('btn-print-map')?.addEventListener('click', () => window.print());
-
-    // ۶. پایش زنده مختصات
+    // پایش مختصات
     map2D.on('mousemove', (e) => {
         const { lat, lng } = e.latlng;
         document.getElementById('coord-dd').innerText = `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
-        document.getElementById('coord-dms').innerText = `${toDMS(lat, 'lat')}, ${toDMS(lng, 'lng')}`;
         const utm = convertLatLngToUTM(lat, lng);
         document.getElementById('coord-utm').innerText = `Z${utm.zone}${utm.hemisphere} | E:${Math.round(utm.easting)} N:${Math.round(utm.northing)}`;
     });
 
     return { map2D, viewer3D, drawnItems };
+}
+
+/**
+ * همگام‌سازی لایه‌ها از ۲D به ۳D Cesium
+ */
+export function syncLayerTo3D(layer, type, viewer3D) {
+    if (!viewer3D) return;
+
+    if (type === 'polyline' || layer instanceof L.Polyline) {
+        const latlngs = layer.getLatLngs();
+        const degreesArray = [];
+        latlngs.forEach(pt => degreesArray.push(pt.lng, pt.lat));
+
+        viewer3D.entities.add({
+            polyline: {
+                positions: Cesium.Cartesian3.fromDegreesArray(degreesArray),
+                width: 4,
+                material: Cesium.Color.CYAN,
+                clampToGround: true
+            }
+        });
+    } else if (type === 'polygon' || layer instanceof L.Polygon) {
+        const latlngs = layer.getLatLngs()[0];
+        const degreesArray = [];
+        latlngs.forEach(pt => degreesArray.push(pt.lng, pt.lat));
+
+        viewer3D.entities.add({
+            polygon: {
+                hierarchy: Cesium.Cartesian3.fromDegreesArray(degreesArray),
+                material: Cesium.Color.RED.withAlpha(0.4),
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+            }
+        });
+    } else if (type === 'marker' || layer instanceof L.Marker) {
+        const pt = layer.getLatLng();
+        viewer3D.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(pt.lng, pt.lat),
+            point: { pixelSize: 10, color: Cesium.Color.YELLOW }
+        });
+    }
+}
+
+/**
+ * تولید پروفایل ارتفاعی تطبیقی زنده با انیمیشن و Hover متقابل
+ */
+async function generateAdaptiveElevationProfile(polylineLayer, map2D, viewer3D) {
+    const latlngs = polylineLayer.getLatLngs();
+    const samplesCount = 60;
+    const interpolatedPoints = [];
+    
+    // ۱. نمونه‌برداری فاصله‌ای روی مسیر
+    for (let i = 0; i < latlngs.length - 1; i++) {
+        const p1 = latlngs[i];
+        const p2 = latlngs[i + 1];
+        for (let j = 0; j < samplesCount / (latlngs.length - 1); j++) {
+            const t = j / (samplesCount / (latlngs.length - 1));
+            const lat = p1.lat + (p2.lat - p1.lat) * t;
+            const lng = p1.lng + (p2.lng - p1.lng) * t;
+            interpolatedPoints.push({ lat, lng });
+        }
+    }
+    interpolatedPoints.push({ lat: latlngs[latlngs.length - 1].lat, lng: latlngs[latlngs.length - 1].lng });
+
+    // ۲. استعلام ارتفاع متوالی از API Open-Elevation
+    const locations = interpolatedPoints.map(p => ({ latitude: p.lat, longitude: p.lng }));
+    
+    try {
+        const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ locations })
+        });
+        const data = await res.json();
+        const results = data.results;
+
+        let totalDist = 0;
+        const labels = [];
+        const elevationData = [];
+        let minElev = Infinity, maxElev = -Infinity, totalGain = 0;
+
+        results.forEach((pt, idx) => {
+            if (idx > 0) {
+                const prev = results[idx - 1];
+                const d = L.latLng(prev.latitude, prev.longitude).distanceTo(L.latLng(pt.latitude, pt.longitude));
+                totalDist += d;
+                const diff = pt.elevation - prev.elevation;
+                if (diff > 0) totalGain += diff;
+            }
+            labels.push((totalDist / 1000).toFixed(2));
+            elevationData.push(pt.elevation);
+
+            if (pt.elevation < minElev) minElev = pt.elevation;
+            if (pt.elevation > maxElev) maxElev = pt.elevation;
+        });
+
+        // بروزرسانی آمار
+        document.getElementById('stat-min').innerText = Math.round(minElev);
+        document.getElementById('stat-max').innerText = Math.round(maxElev);
+        document.getElementById('stat-gain').innerText = Math.round(totalGain);
+        document.getElementById('stat-length').innerText = (totalDist / 1000).toFixed(2);
+        document.getElementById('elevation-profile-panel').style.display = 'block';
+
+        // ۳. رسم نمودار با Chart.js و رویداد Hover تطبیقی
+        const ctx = document.getElementById('elevationChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'ارتفاع (متر)',
+                    data: elevationData,
+                    borderColor: '#00d2ff',
+                    backgroundColor: 'rgba(0, 210, 255, 0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                onHover: (event, activeElements) => {
+                    if (activeElements && activeElements.length > 0) {
+                        const index = activeElements[0].index;
+                        const targetPt = results[index];
+                        updateHoverMarkers(targetPt.latitude, targetPt.longitude, targetPt.elevation, map2D, viewer3D);
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'فاصله (کیلومتر)', color: '#ccc' }, ticks: { color: '#aaa' } },
+                    y: { title: { display: true, text: 'ارتفاع (متر)', color: '#ccc' }, ticks: { color: '#aaa' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+    } catch (e) {
+        console.error("خطا در دریافت داده‌های ارتفاعی:", e);
+        alert("امکان استعلام آنلاین داده‌های ارتفاعی وجود ندارد.");
+    }
+}
+
+/**
+ * بروزرسانی تعاملی مارکر شناور روی هر دو نقشه
+ */
+function updateHoverMarkers(lat, lng, elev, map2D, viewer3D) {
+    // ۲D Marker
+    if (!profileHoverMarker2D) {
+        profileHoverMarker2D = L.circleMarker([lat, lng], { radius: 7, color: '#ff0055', fillColor: '#fff', fillOpacity: 1 }).addTo(map2D);
+    } else {
+        profileHoverMarker2D.setLatLng([lat, lng]);
+    }
+
+    // ۳D Entity
+    if (viewer3D) {
+        if (!profileHoverEntity3D) {
+            profileHoverEntity3D = viewer3D.entities.add({
+                position: Cesium.Cartesian3.fromDegrees(lng, lat, elev + 10),
+                point: { pixelSize: 12, color: Cesium.Color.RED, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 }
+            });
+        } else {
+            profileHoverEntity3D.position = Cesium.Cartesian3.fromDegrees(lng, lat, elev + 10);
+        }
+    }
 }
 
 function setupBaseMapDropdown2D(map2D, baseMaps) {
@@ -175,14 +336,12 @@ function setupBaseMapDropdown2D(map2D, baseMaps) {
             const div = document.createElement('div');
             div.className = `base-item ${index === 0 ? 'active' : ''}`;
             div.innerHTML = `<i class="fa-solid fa-map"></i> <span>${item.name}</span>`;
-            
             div.addEventListener('click', () => {
                 Object.keys(baseMaps).forEach(k => map2D.removeLayer(baseMaps[k].layer));
                 map2D.addLayer(item.layer);
                 dropdown.querySelectorAll('.base-item').forEach(el => el.classList.remove('active'));
                 div.classList.add('active');
             });
-
             dropdown.appendChild(div);
         });
     }
@@ -191,12 +350,10 @@ function setupBaseMapDropdown2D(map2D, baseMaps) {
 function setupBaseMapDropdown3D(viewer3D) {
     const dropdown = document.getElementById('base-map-dropdown-3d');
     const toggleBtn = document.getElementById('btn-base-map-toggle-3d');
-
     const base3DSources = {
         "google-sat": "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
         "google-hybrid": "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-        "osm": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-        "carto-dark": "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+        "osm": "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
     };
 
     if (toggleBtn && dropdown && viewer3D) {
@@ -210,7 +367,6 @@ function setupBaseMapDropdown3D(viewer3D) {
             const div = document.createElement('div');
             div.className = `base-item ${index === 0 ? 'active' : ''}`;
             div.innerHTML = `<i class="fa-solid fa-globe"></i> <span>${key.toUpperCase()} (3D)</span>`;
-            
             div.addEventListener('click', () => {
                 viewer3D.imageryLayers.removeAll();
                 viewer3D.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
@@ -220,32 +376,15 @@ function setupBaseMapDropdown3D(viewer3D) {
                 dropdown.querySelectorAll('.base-item').forEach(el => el.classList.remove('active'));
                 div.classList.add('active');
             });
-
             dropdown.appendChild(div);
         });
     }
 }
 
-function toDMS(deg, type) {
-    const absolute = Math.abs(deg);
-    const degrees = Math.floor(absolute);
-    const minutesNotTruncated = (absolute - degrees) * 60;
-    const minutes = Math.floor(minutesNotTruncated);
-    const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
-
-    let direction = "";
-    if (type === 'lat') direction = deg >= 0 ? "N" : "S";
-    if (type === 'lng') direction = deg >= 0 ? "E" : "W";
-
-    return `${degrees}°${minutes}'${seconds}"${direction}`;
-}
-
 function convertLatLngToUTM(lat, lng) {
     const zone = Math.floor((lng + 180) / 6) + 1;
     const hemisphere = lat >= 0 ? 'N' : 'S';
-    const radLat = lat * Math.PI / 180;
-    const easting = 500000 + (lng - (zone * 6 - 183)) * 111320 * Math.cos(radLat);
+    const easting = 500000 + (lng - (zone * 6 - 183)) * 111320 * Math.cos(lat * Math.PI / 180);
     const northing = (lat >= 0 ? lat : lat + 90) * 110574;
-
     return { zone, hemisphere, easting, northing };
 }
