@@ -1,11 +1,12 @@
 import { initMap } from './map.js';
+import { initRoutingModule } from './modules/routing.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // راه اندازی هسته نقشه
-    const { map, layerControl, overlayMaps } = initMap();
+    // ۱. راه اندازی نقشه اصلی و UI
+    const { map } = initMap();
 
-    console.log("گام اول: نقشه پایه با موفقیت بارگذاری شد.");
-    
-    // شیء سراسری جهت دسترسی ماژول‌های بعدی در مراحل آینده
-    window.AppMap = { map, layerControl, overlayMaps };
+    // ۲. بارگذاری گام اول: ماژول ناوبری و مسیریابی
+    initRoutingModule(map);
+
+    console.log("گام اول (ناوبری و UI پیشرفته) با موفقیت فعال شد.");
 });
