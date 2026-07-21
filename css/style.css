@@ -1,0 +1,25 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body, #map {
+    width: 100%;
+    height: 100%;
+    font-family: Tahoma, 'Segoe UI', Geneva, Verdana, sans-serif;
+}
+
+/* تنظیمات منوی کنترل لایه‌ها برای RTL */
+.leaflet-control-layers {
+    direction: rtl;
+    text-align: right;
+    font-size: 13px;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.leaflet-control-layers-base label {
+    margin-bottom: 4px;
+    cursor: pointer;
+}
