@@ -1,13 +1,52 @@
 /**
- * ماژول کامل هواشناسی
+ * ماژول کامل هواشناسی با پشتیبانی از API هوشمند RainViewer
  */
 export function initWeatherModule(map) {
-    const rainViewerLayer = L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast/256/{z}/{x}/{y}/2/1_1.png', { opacity: 0.6 });
+    let rainViewerLayer = null;
 
-    document.getElementById('chk-weather-radar')?.addEventListener('change', (e) => {
-        e.target.checked ? map.addLayer(rainViewerLayer) : map.removeLayer(rainViewerLayer);
+    // بارگذاری هوشمند لایه رادار بارش
+    document.getElementById('chk-weather-radar')?.addEventListener('change', async (e) => {
+        if (e.target.checked) {
+            const infoBox = document.getElementById('weather-info-box');
+            if (infoBox) infoBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> در حال دریافت داده‌های رادار...`;
+
+            try {
+                // استعلام زمان جدیدترین فریم‌های آماده RainViewer
+                const apiRes = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+                const apiData = await apiRes.json();
+
+                if (apiData && apiData.radar && apiData.radar.past && apiData.radar.past.length > 0) {
+                    // دریافت جدیدترین فریم رادار
+                    const latestFrame = apiData.radar.past[apiData.radar.past.length - 1];
+                    const timePath = latestFrame.path;
+                    const host = apiData.host || 'https://tilecache.rainviewer.com';
+
+                    const tileUrl = `${host}${timePath}/256/{z}/{x}/{y}/2/1_1.png`;
+
+                    if (rainViewerLayer) map.removeLayer(rainViewerLayer);
+                    rainViewerLayer = L.tileLayer(tileUrl, {
+                        opacity: 0.65,
+                        maxZoom: 18,
+                        attribution: 'RainViewer Radar'
+                    });
+
+                    map.addLayer(rainViewerLayer);
+                    if (infoBox) infoBox.innerHTML = `✅ رادار بارش زنده بارگذاری شد. (به‌روزرسانی: ${new Date(latestFrame.time * 1000).toLocaleTimeString('fa-IR')})`;
+                } else {
+                    alert('داده‌های رادار در حال حاضر در دسترس نیستند.');
+                    e.target.checked = false;
+                }
+            } catch (err) {
+                console.error('خطا در بارگذاری رادار RainViewer:', err);
+                alert('برقراری ارتباط با API RainViewer ناموفق بود.');
+                e.target.checked = false;
+            }
+        } else if (rainViewerLayer) {
+            map.removeLayer(rainViewerLayer);
+        }
     });
 
+    // لایه پوشش ابر OpenWeatherMap
     let owmCloudsLayer = null;
     document.getElementById('chk-weather-clouds')?.addEventListener('change', (e) => {
         if (e.target.checked) {
@@ -19,6 +58,7 @@ export function initWeatherModule(map) {
         }
     });
 
+    // استعلام هواشناسی نقطه ای با کلیک روی نقشه
     map.on('click', async (e) => {
         const { lat, lng } = e.latlng;
         const infoBox = document.getElementById('weather-info-box');
