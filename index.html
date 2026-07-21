@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سامانه متمرکز پایش GIS</title>
+    <title>سامانه پیشرفته GIS و پایش متمرکز</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -13,30 +13,21 @@
 <body>
 
     <div class="app-layout">
-        <!-- دکمه باز و بستن پنل -->
-        <button id="sidebar-toggle" class="sidebar-toggle-btn" title="تغییر وضعیت پنل">
+        <!-- دکمه باز و بستن پنل اصلی -->
+        <button id="sidebar-toggle" class="sidebar-toggle-btn" title="مدیریت پنل">
             <i class="fa-solid fa-bars"></i>
         </button>
 
-        <!-- Sidebar آکاردئونی مدیریت ۲۰ ماژول -->
+        <!-- Sidebar آکاردئونی شیشه‌ای (Ultra-Glassmorphism) -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fa-solid fa-earth-americas" style="color: var(--primary);"></i> سامانه GIS متمرکز</h2>
+                <h2><i class="fa-solid fa-earth-americas text-accent"></i> سامانه GIS متمرکز</h2>
             </div>
 
             <div class="sidebar-content">
                 
-                <!-- اکاردئون ۱: لایه‌های پایه -->
+                <!-- ۱. ناوبری و مسیریابی -->
                 <div class="accordion-item active">
-                    <div class="accordion-header">
-                        <span><i class="fa-solid fa-layer-group"></i> نقشه‌های پایه (Base Map)</span>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                    <div class="accordion-content" id="base-layers-container"></div>
-                </div>
-
-                <!-- اکاردئون ۲: گام ۱ - ناوبری و مسیریابی -->
-                <div class="accordion-item">
                     <div class="accordion-header">
                         <span><i class="fa-solid fa-route"></i> ۱. مسیریابی و جستجو</span>
                         <i class="fa-solid fa-chevron-down"></i>
@@ -49,11 +40,11 @@
                         <button id="btn-set-start" class="btn btn-success"><i class="fa-solid fa-location-dot"></i> تعیین مبدأ روی نقشه</button>
                         <button id="btn-set-end" class="btn"><i class="fa-solid fa-flag-checkered"></i> تعیین مقصد روی نقشه</button>
                         <button id="btn-clear-route" class="btn btn-danger"><i class="fa-solid fa-trash"></i> پاک‌سازی مسیر</button>
-                        <div id="route-info" style="margin-top:10px; font-size:11px; color:#38bdf8;"></div>
+                        <div id="route-info" class="info-box"></div>
                     </div>
                 </div>
 
-                <!-- اکاردئون ۳: گام ۲ - ترافیک واقعی‌زمان -->
+                <!-- ۲. ترافیک واقعی‌زمان -->
                 <div class="accordion-item">
                     <div class="accordion-header">
                         <span><i class="fa-solid fa-car"></i> ۲. ترافیک واقعی‌زمان</span>
@@ -61,13 +52,17 @@
                     </div>
                     <div class="accordion-content">
                         <label class="layer-checkbox">
-                            <input type="checkbox" id="chk-traffic-flow">
-                            <span>لایه وضعیت ترافیک آنلاین (TomTom/Flow)</span>
+                            <input type="checkbox" id="chk-traffic-google">
+                            <span>ترافیک زنده گوگل (Google Traffic)</span>
+                        </label>
+                        <label class="layer-checkbox" style="margin-top: 8px;">
+                            <input type="checkbox" id="chk-traffic-tomtom">
+                            <span>ترافیک TomTom Flow (نیازمند API Key)</span>
                         </label>
                     </div>
                 </div>
 
-                <!-- اکاردئون ۴: گام ۳ - هواشناسی و اقلیم -->
+                <!-- ۳. هواشناسی و اقلیم -->
                 <div class="accordion-item">
                     <div class="accordion-header">
                         <span><i class="fa-solid fa-cloud-sun-rain"></i> ۳. هواشناسی و اقلیم</span>
@@ -75,26 +70,63 @@
                     </div>
                     <div class="accordion-content">
                         <label class="layer-checkbox">
-                            <input type="checkbox" id="chk-weather-clouds">
-                            <span>پوشش ابر زنده</span>
+                            <input type="checkbox" id="chk-weather-radar">
+                            <span>رادار بارش زنده (RainViewer)</span>
                         </label>
                         <label class="layer-checkbox" style="margin-top:8px;">
-                            <input type="checkbox" id="chk-weather-precipitation">
-                            <span>رادار بارش و بارندگی</span>
+                            <input type="checkbox" id="chk-weather-clouds">
+                            <span>پوشش ابر جهان (OWM)</span>
                         </label>
-                        <div id="weather-info-box" style="margin-top:10px; font-size:12px; background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">
-                            برای مشاهده پیش‌بینی آنلاین روی هر نقطه از نقشه کلیک کنید.
+                        <div id="weather-info-box" class="info-box" style="margin-top: 10px;">
+                            جهت مشاهده اطلاعات کامل هواشناسی بر روی هر نقطه از نقشه کلیک کنید.
                         </div>
                     </div>
                 </div>
 
-                <!-- جا برای ماژول‌های ۴ تا ۲۰ (در گام‌های بعدی پر می‌شوند) -->
+                <!-- بخش تنظیمات کلیدهای API (مدیریت متمرکز بدون هاردکد) -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span><i class="fa-solid fa-sliders"></i> تنظیمات و کلیدهای API</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="form-group">
+                            <label>OpenWeatherMap API Key:</label>
+                            <input type="text" id="api-owm" class="input-style" placeholder="مقدار کلید..." />
+                        </div>
+                        <div class="form-group">
+                            <label>TomTom API Key:</label>
+                            <input type="text" id="api-tomtom" class="input-style" placeholder="مقدار کلید..." />
+                        </div>
+                        <div class="form-group">
+                            <label>OpenRouteService API Key:</label>
+                            <input type="text" id="api-ors" class="input-style" placeholder="مقدار کلید..." />
+                        </div>
+                        <button id="btn-save-settings" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> ذخیره تنظیمات</button>
+                    </div>
+                </div>
 
             </div>
         </aside>
 
         <!-- نقشه اصلی -->
-        <main class="map-container" id="map"></main>
+        <main class="map-container" id="map">
+            <!-- منوی شناور انتخاب نقشه‌های پایه در گوشه بالا سمت چپ -->
+            <div class="base-map-floater">
+                <button id="btn-base-map-toggle" class="floater-btn" title="تغییر نقشه پایه">
+                    <i class="fa-solid fa-layer-group"></i>
+                </button>
+                <div id="base-map-dropdown" class="floater-dropdown">
+                    <!-- آیتم‌ها از JS پر می‌شوند -->
+                </div>
+            </div>
+
+            <!-- نوار وضعیت سیستم‌های مختصات زنده در پایین صفحه -->
+            <div class="status-bar" id="status-bar">
+                <div class="coord-item"><span>WGS84:</span> <strong id="coord-wgs84">---</strong></div>
+                <div class="coord-item"><span>UTM:</span> <strong id="coord-utm">---</strong></div>
+            </div>
+        </main>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
