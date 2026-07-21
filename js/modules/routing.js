@@ -1,15 +1,14 @@
 /**
- * ماژول ناوبری و مسیریابی (Routing & Geocoding)
+ * ماژول ناوبری و مسیریابی
  */
 export function initRoutingModule(map) {
     let startMarker = null;
     let endMarker = null;
     let routeLayer = null;
-    let selectingMode = null; // 'start' or 'end'
+    let selectingMode = null;
 
     const routeOverlayGroup = L.layerGroup().addTo(map);
 
-    // ۱. Geocoding با استفاده از Nominatim (رایگان)
     const searchBtn = document.getElementById('geo-search-btn');
     if (searchBtn) {
         searchBtn.addEventListener('click', async () => {
@@ -32,7 +31,6 @@ export function initRoutingModule(map) {
         });
     }
 
-    // ۲. دکمه‌های تعیین مبدأ و مقصد
     const btnStart = document.getElementById('btn-set-start');
     const btnEnd = document.getElementById('btn-set-end');
     const btnClear = document.getElementById('btn-clear-route');
@@ -46,11 +44,11 @@ export function initRoutingModule(map) {
             if (endMarker) routeOverlayGroup.removeLayer(endMarker);
             if (routeLayer) routeOverlayGroup.removeLayer(routeLayer);
             startMarker = null; endMarker = null; routeLayer = null;
-            document.getElementById('route-info').innerHTML = '';
+            const infoBox = document.getElementById('route-info');
+            if (infoBox) infoBox.innerHTML = '';
         });
     }
 
-    // کلیک روی نقشه برای جانمایی مبدأ/مقصد
     map.on('click', (e) => {
         if (!selectingMode) return;
 
@@ -69,7 +67,6 @@ export function initRoutingModule(map) {
         }
     });
 
-    // ۳. محاسبه مسیر با OSRM
     async function calculateRoute() {
         const p1 = startMarker.getLatLng();
         const p2 = endMarker.getLatLng();
@@ -91,9 +88,12 @@ export function initRoutingModule(map) {
                 const distanceKm = (route.distance / 1000).toFixed(2);
                 const durationMin = Math.round(route.duration / 60);
 
-                document.getElementById('route-info').innerHTML = `
-                    مسافت: <b>${distanceKm} کیلومتر</b> | زمان: <b>${durationMin} دقیقه</b>
-                `;
+                const infoBox = document.getElementById('route-info');
+                if (infoBox) {
+                    infoBox.innerHTML = `
+                        مسافت: <b>${distanceKm} کیلومتر</b> | زمان تقریبی: <b>${durationMin} دقیقه</b>
+                    `;
+                }
             }
         } catch (err) {
             console.error('خطا در دریافت مسیر:', err);
