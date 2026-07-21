@@ -1,36 +1,70 @@
 import { initMap } from './map.js';
 import { initRoutingModule } from './modules/routing.js';
+import { initAnalysisModule } from './modules/analysis.js';
 import { initTrafficModule } from './modules/traffic.js';
 import { initWeatherModule } from './modules/weather.js';
 import { initDisasterModule } from './modules/disasters.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ۱. مقداردهی اولیه نقشه
-    const { map } = initMap();
+    // ۱. راه اندازی هسته دو نقشه ۲D و ۳D
+    const { map2D, viewer3D, drawnItems } = initMap();
 
-    // ۲. بارگذاری کلیه ماژول‌ها
-    try { initRoutingModule(map); } catch(e) { console.error(e); }
-    try { initTrafficModule(map); } catch(e) { console.error(e); }
-    try { initWeatherModule(map); } catch(e) { console.error(e); }
-    try { initDisasterModule(map); } catch(e) { console.error(e); }
+    // ۲. راه اندازی کلیه ماژول‌ها
+    try { initRoutingModule(map2D); } catch(e) { console.error(e); }
+    try { initAnalysisModule(map2D, drawnItems); } catch(e) { console.error(e); }
+    try { initTrafficModule(map2D); } catch(e) { console.error(e); }
+    try { initWeatherModule(map2D); } catch(e) { console.error(e); }
+    try { initDisasterModule(map2D); } catch(e) { console.error(e); }
 
-    // ۳. انیمیشن بستن سایدبار و رندر مجدد نقشه
+    // ۳. مدیریت تغییر حالت نمایش (۲D / ۳D / Dual)
+    const mapContainer = document.getElementById('map-container');
+    const btn2D = document.getElementById('btn-mode-2d');
+    const btn3D = document.getElementById('btn-mode-3d');
+    const btnSplit = document.getElementById('btn-mode-split');
+
+    function setViewMode(mode) {
+        mapContainer.className = 'map-viewport-container';
+        btn2D.classList.remove('active');
+        btn3D.classList.remove('active');
+        btnSplit.classList.remove('active');
+
+        if (mode === 'split') {
+            mapContainer.classList.add('mode-split');
+            btnSplit.classList.add('active');
+        } else if (mode === '3d') {
+            mapContainer.classList.add('mode-3d');
+            btn3D.classList.add('active');
+        } else {
+            btn2D.classList.add('active');
+        }
+
+        setTimeout(() => {
+            map2D.invalidateSize();
+            if (viewer3D) viewer3D.resize();
+        }, 300);
+    }
+
+    btn2D?.addEventListener('click', () => setViewMode('2d'));
+    btn3D?.addEventListener('click', () => setViewMode('3d'));
+    btnSplit?.addEventListener('click', () => setViewMode('split'));
+
+    // ۴. مدیریت سایدبار و آکاردئون‌ها
     const toggleBtn = document.getElementById('sidebar-toggle');
     const sidebar = document.getElementById('sidebar');
 
     toggleBtn?.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
-        setTimeout(() => map.invalidateSize(), 300);
+        setTimeout(() => {
+            map2D.invalidateSize();
+            if (viewer3D) viewer3D.resize();
+        }, 300);
     });
 
-    // ۴. مدیریت آکاردئون‌های سایدبار
     document.querySelectorAll('.accordion-header').forEach(header => {
-        header.addEventListener('click', () => {
-            header.parentElement.classList.toggle('active');
-        });
+        header.addEventListener('click', () => header.parentElement.classList.toggle('active'));
     });
 
-    // ۵. بارگذاری و ذخیره کلیدهای API در LocalStorage
+    // ۵. کلیدهای API
     const owmInput = document.getElementById('api-owm');
     const tomInput = document.getElementById('api-tomtom');
 
@@ -40,6 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-save-settings')?.addEventListener('click', () => {
         if (owmInput) localStorage.setItem('API_OWM', owmInput.value.trim());
         if (tomInput) localStorage.setItem('API_TOMTOM', tomInput.value.trim());
-        alert('تنظیمات و کلیدهای API با موفقیت ذخیره شدند.');
+        alert('تنظیمات با موفقیت ذخیره شدند.');
     });
 });
