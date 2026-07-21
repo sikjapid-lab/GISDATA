@@ -9,58 +9,48 @@ export function initRoutingModule(map) {
 
     const routeOverlayGroup = L.layerGroup().addTo(map);
 
-    // افزودن چک‌باکس ماژول به لیست Overlayها در Sidebar
-    const overlayContainer = document.getElementById('overlay-layers-container');
-    const label = document.createElement('label');
-    label.className = 'layer-checkbox';
-    label.innerHTML = `
-        <input type="checkbox" id="chk-routing" checked>
-        <span><i class="fa-solid fa-route"></i> سرویس مسیریابی و ناوبری</span>
-    `;
-    overlayContainer.appendChild(label);
-
-    document.getElementById('chk-routing').addEventListener('change', (e) => {
-        if (e.target.checked) {
-            map.addLayer(routeOverlayGroup);
-            document.getElementById('routing-panel').style.display = 'block';
-        } else {
-            map.removeLayer(routeOverlayGroup);
-            document.getElementById('routing-panel').style.display = 'none';
-        }
-    });
-
     // ۱. Geocoding با استفاده از Nominatim (رایگان)
-    document.getElementById('geo-search-btn').addEventListener('click', async () => {
-        const query = document.getElementById('geo-search-input').value;
-        if (!query) return;
+    const searchBtn = document.getElementById('geo-search-btn');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', async () => {
+            const query = document.getElementById('geo-search-input').value;
+            if (!query) return;
 
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            if (data && data.length > 0) {
-                const { lat, lon, display_name } = data[0];
-                map.flyTo([lat, lon], 13);
-                L.popup().setLatLng([lat, lon]).setContent(`<b>${display_name}</b>`).openOn(map);
-            } else {
-                alert('مکانی یافت نشد!');
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const { lat, lon, display_name } = data[0];
+                    map.flyTo([lat, lon], 13);
+                    L.popup().setLatLng([lat, lon]).setContent(`<b>${display_name}</b>`).openOn(map);
+                } else {
+                    alert('مکانی یافت نشد!');
+                }
+            } catch (err) {
+                console.error('خطا در جستجو:', err);
             }
-        } catch (err) {
-            console.error(err);
-        }
-    });
+        });
+    }
 
-    // ۲. انتخاب نقاط روی نقشه
-    document.getElementById('btn-set-start').addEventListener('click', () => selectingMode = 'start');
-    document.getElementById('btn-set-end').addEventListener('click', () => selectingMode = 'end');
+    // ۲. دکمه‌های تعیین مبدأ و مقصد
+    const btnStart = document.getElementById('btn-set-start');
+    const btnEnd = document.getElementById('btn-set-end');
+    const btnClear = document.getElementById('btn-clear-route');
+
+    if (btnStart) btnStart.addEventListener('click', () => selectingMode = 'start');
+    if (btnEnd) btnEnd.addEventListener('click', () => selectingMode = 'end');
     
-    document.getElementById('btn-clear-route').addEventListener('click', () => {
-        if (startMarker) routeOverlayGroup.removeLayer(startMarker);
-        if (endMarker) routeOverlayGroup.removeLayer(endMarker);
-        if (routeLayer) routeOverlayGroup.removeLayer(routeLayer);
-        startMarker = null; endMarker = null; routeLayer = null;
-        document.getElementById('route-info').innerHTML = '';
-    });
+    if (btnClear) {
+        btnClear.addEventListener('click', () => {
+            if (startMarker) routeOverlayGroup.removeLayer(startMarker);
+            if (endMarker) routeOverlayGroup.removeLayer(endMarker);
+            if (routeLayer) routeOverlayGroup.removeLayer(routeLayer);
+            startMarker = null; endMarker = null; routeLayer = null;
+            document.getElementById('route-info').innerHTML = '';
+        });
+    }
 
+    // کلیک روی نقشه برای جانمایی مبدأ/مقصد
     map.on('click', (e) => {
         if (!selectingMode) return;
 
@@ -79,7 +69,7 @@ export function initRoutingModule(map) {
         }
     });
 
-    // ۳. محاسبه مسیر با OSRM Public API
+    // ۳. محاسبه مسیر با OSRM
     async function calculateRoute() {
         const p1 = startMarker.getLatLng();
         const p2 = endMarker.getLatLng();
@@ -102,7 +92,7 @@ export function initRoutingModule(map) {
                 const durationMin = Math.round(route.duration / 60);
 
                 document.getElementById('route-info').innerHTML = `
-                    مسافت: <b>${distanceKm} کیلومتر</b> | زمان تخمینی: <b>${durationMin} دقیقه</b>
+                    مسافت: <b>${distanceKm} کیلومتر</b> | زمان: <b>${durationMin} دقیقه</b>
                 `;
             }
         } catch (err) {
