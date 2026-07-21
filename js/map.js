@@ -1,5 +1,5 @@
 /**
- * هسته نقشه‌های ۲D و ۳D، سینک لحظه‌ای، Google Earth و منوهای بیس‌لایر مجزا
+ * هسته نقشه‌های ۲D و ۳D، سینک لحظه‌ای و منوهای بیس‌لایر
  */
 export function initMap() {
     // ۱. تعریف بیس‌لایرهای استاندارد ۲D و Google Earth
@@ -40,63 +40,76 @@ export function initMap() {
 
     L.control.zoom({ position: 'bottomleft' }).addTo(map2D);
 
-    // ۳. راه اندازی CesiumJS 3D Globe
-    Cesium.Ion.defaultAccessToken = ''; // استفاده از پروایدرهای عمومی بدون نیاز به توکن
-    const viewer3D = new Cesium.Viewer('map-3d', {
-        animation: false,
-        timeline: false,
-        baseLayerPicker: false,
-        geocoder: false,
-        homeButton: false,
-        sceneModePicker: false,
-        navigationHelpButton: false,
-        fullscreenButton: false,
-        imageryProvider: new Cesium.UrlTemplateImageryProvider({
-            url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-            maximumLevel: 20
-        })
-    });
-
-    // اضافه کردن عوارض ۳D زمین (Terrain)
-    viewer3D.terrainProvider = Cesium.createWorldTerrain();
-
-    // ۴. سینک لحظه‌ای (Synchronization) بین ۲D و ۳D
+    // ۳. راه اندازی ایمن CesiumJS 3D Globe (جلوگیری از قفل شدن اسکریپت در صورت عدم بارگذاری CDN)
+    let viewer3D = null;
     let isSyncing2D = false;
     let isSyncing3D = false;
 
-    map2D.on('move', () => {
-        if (isSyncing3D) return;
-        isSyncing2D = true;
+    if (typeof Cesium !== 'undefined') {
+        try {
+            Cesium.Ion.defaultAccessToken = '';
+            viewer3D = new Cesium.Viewer('map-3d', {
+                animation: false,
+                timeline: false,
+                baseLayerPicker: false,
+                geocoder: false,
+                homeButton: false,
+                sceneModePicker: false,
+                navigationHelpButton: false,
+                fullscreenButton: false,
+                imageryProvider: new Cesium.UrlTemplateImageryProvider({
+                    url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+                    maximumLevel: 20
+                })
+            });
 
-        const center = map2D.getCenter();
-        const zoom = map2D.getZoom();
-        const height = Math.max(1000, 10000000 / Math.pow(2, zoom - 1));
+            if (Cesium.createWorldTerrain) {
+                viewer3D.terrainProvider = Cesium.createWorldTerrain();
+            }
 
-        viewer3D.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(center.lng, center.lat, height)
-        });
+            // سینک از ۲D به ۳D
+            map2D.on('move', () => {
+                if (isSyncing3D || !viewer3D) return;
+                isSyncing2D = true;
 
-        isSyncing2D = false;
-    });
+                const center = map2D.getCenter();
+                const zoom = map2D.getZoom();
+                const height = Math.max(1000, 10000000 / Math.pow(2, zoom - 1));
 
-    viewer3D.camera.moveEnd.addEventListener(() => {
-        if (isSyncing2D) return;
-        isSyncing3D = true;
+                viewer3D.camera.setView({
+                    destination: Cesium.Cartesian3.fromDegrees(center.lng, center.lat, height)
+                });
 
-        const cartographic = Cesium.Cartographic.fromCartesian(viewer3D.camera.position);
-        const lat = Cesium.Math.toDegrees(cartographic.latitude);
-        const lng = Cesium.Math.toDegrees(cartographic.longitude);
-        const height = cartographic.height;
+                isSyncing2D = false;
+            });
 
-        let zoom = Math.round(Math.log2(10000000 / height)) + 1;
-        zoom = Math.min(Math.max(zoom, 2), 19);
+            // سینک از ۳D به ۲D
+            viewer3D.camera.moveEnd.addEventListener(() => {
+                if (isSyncing2D || !viewer3D) return;
+                isSyncing3D = true;
 
-        map2D.setView([lat, lng], zoom, { animate: false });
+                const cartographic = Cesium.Cartographic.fromCartesian(viewer3D.camera.position);
+                const lat = Cesium.Math.toDegrees(cartographic.latitude);
+                const lng = Cesium.Math.toDegrees(cartographic.longitude);
+                const height = cartographic.height;
 
-        isSyncing3D = false;
-    });
+                let zoom = Math.round(Math.log2(10000000 / height)) + 1;
+                zoom = Math.min(Math.max(zoom, 2), 19);
 
-    // ۵. ابزار رسم Leaflet Draw
+                map2D.setView([lat, lng], zoom, { animate: false });
+
+                isSyncing3D = false;
+            });
+
+            setupBaseMapDropdown3D(viewer3D);
+        } catch (err) {
+            console.warn("خطا در راه اندازی موتور 3D سزیوم:", err);
+        }
+    } else {
+        console.warn("کتابخانه Cesium یافت نشد. برنامه در حالت 2D اجرا می‌شود.");
+    }
+
+    // ۴. ابزار رسم Leaflet Draw
     const drawnItems = new L.FeatureGroup();
     map2D.addLayer(drawnItems);
 
@@ -128,16 +141,13 @@ export function initMap() {
         }
     });
 
-    // ۶. مدیریت بیس‌مپ‌های مجزا برای ۲D
+    // ۵. مدیریت بیس‌مپ‌های ۲D
     setupBaseMapDropdown2D(map2D, baseMaps2D);
-
-    // ۷. مدیریت بیس‌مپ‌های مجزا برای ۳D
-    setupBaseMapDropdown3D(viewer3D);
 
     // پرینت نقشه
     document.getElementById('btn-print-map')?.addEventListener('click', () => window.print());
 
-    // ۸. پایش زنده مختصات
+    // ۶. پایش زنده مختصات
     map2D.on('mousemove', (e) => {
         const { lat, lng } = e.latlng;
         document.getElementById('coord-dd').innerText = `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
@@ -189,7 +199,7 @@ function setupBaseMapDropdown3D(viewer3D) {
         "carto-dark": "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
     };
 
-    if (toggleBtn && dropdown) {
+    if (toggleBtn && dropdown && viewer3D) {
         toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdown.classList.toggle('show');
