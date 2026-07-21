@@ -1,21 +1,8 @@
-:root {
-    --bg-glass: rgba(10, 16, 30, 0.75);
-    --bg-card: rgba(255, 255, 255, 0.05);
-    --border-glass: rgba(255, 255, 255, 0.18);
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --accent-green: #10b981;
-    --accent-red: #ef4444;
-    --accent-cyan: #06b6d4;
-    --sidebar-width: 380px;
-}
-
+/* css/style.css */
 * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
     font-family: 'Vazirmatn', sans-serif;
 }
 
@@ -23,8 +10,8 @@ body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #020617;
-    color: var(--text-primary);
+    background-color: #0f172a;
+    color: #f8fafc;
 }
 
 .app-layout {
@@ -35,127 +22,48 @@ body, html {
     overflow: hidden;
 }
 
-/* ساختار سایدبار فوق‌شیشه‌ای جئواینت */
+/* Sidebar */
 .sidebar {
-    width: var(--sidebar-width);
+    width: 360px;
     height: 100%;
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-left: 1px solid var(--border-glass);
+    background: #1e293b;
+    border-left: 1px solid #334155;
     display: flex;
     flex-direction: column;
     z-index: 1000;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: -5px 0 30px rgba(0, 0, 0, 0.6);
-    position: relative;
+    transition: all 0.3s ease;
 }
 
 .sidebar.collapsed {
-    margin-right: calc(-1 * var(--sidebar-width));
-}
-
-.sidebar-toggle-btn {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 1001;
-    background: var(--bg-glass);
-    border: 1px solid var(--border-glass);
-    color: var(--text-primary);
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    cursor: pointer;
-    backdrop-filter: blur(15px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    transition: background 0.2s;
-}
-
-.sidebar-toggle-btn:hover {
-    background: rgba(255,255,255,0.2);
+    margin-right: -360px;
 }
 
 .sidebar-header {
-    padding: 18px 20px;
+    padding: 15px 20px;
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid var(--border-glass);
 }
 
 .sidebar-header h2 {
-    font-size: 15px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.radar-icon {
+    font-size: 1.1rem;
     color: #38bdf8;
-    animation: pulse-radar 2s infinite ease-in-out;
 }
-
-@keyframes pulse-radar {
-    0% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.15); opacity: 1; }
-    100% { transform: scale(1); opacity: 0.8; }
-}
-
-.text-accent { color: var(--primary); }
 
 .sidebar-content {
     flex: 1;
     overflow-y: auto;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    padding: 10px;
 }
 
-/* سوئیچ دکمه‌های ۲D / ۳D / Dual */
-.view-mode-selector {
-    display: flex;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--border-glass);
-    border-radius: 8px;
-    padding: 4px;
-    gap: 4px;
-}
-
-.view-btn {
-    flex: 1;
-    padding: 6px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-
-.view-btn.active {
-    background: var(--primary);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
-}
-
-/* آکاردئون‌ها */
+/* Accordion Styling */
 .accordion-item {
-    background: var(--bg-card);
-    border: 1px solid var(--border-glass);
-    border-radius: 10px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    margin-bottom: 10px;
     overflow: hidden;
 }
 
@@ -163,47 +71,81 @@ body, html {
     padding: 12px 15px;
     cursor: pointer;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    font-size: 12.5px;
-    font-weight: 600;
-    user-select: none;
+    align-items: center;
+    font-weight: 500;
+    background: #1e293b;
 }
 
 .accordion-header:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: #334155;
 }
 
 .accordion-content {
     padding: 12px;
     display: none;
-    border-top: 1px solid var(--border-glass);
-    background: rgba(0, 0, 0, 0.25);
 }
 
 .accordion-item.active .accordion-content {
     display: block;
 }
 
-.form-group {
-    margin-bottom: 10px;
+/* Mode Switcher Buttons */
+.view-mode-selector {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    background: #0f172a;
+    padding: 5px;
+    border-radius: 6px;
 }
 
-.form-group label {
-    display: block;
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
+.view-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    transition: all 0.2s;
 }
+
+.view-btn.active {
+    background: #0284c7;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* Controls & Inputs */
+.btn {
+    width: 100%;
+    padding: 9px;
+    background: #0284c7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 8px;
+    font-size: 0.85rem;
+}
+
+.btn:hover { background: #0369a1; }
+.btn-success { background: #16a34a; }
+.btn-success:hover { background: #15803d; }
+.btn-danger { background: #dc2626; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-cyan { background: #0891b2; }
+.btn-cyan:hover { background: #0e7490; }
 
 .input-style {
     width: 100%;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--border-glass);
-    border-radius: 6px;
     padding: 8px 10px;
+    background: #1e293b;
+    border: 1px solid #475569;
     color: #fff;
-    font-size: 12px;
+    border-radius: 4px;
     outline: none;
 }
 
@@ -211,191 +153,175 @@ body, html {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
     cursor: pointer;
+    font-size: 0.9rem;
 }
-
-.btn {
-    width: 100%;
-    padding: 8px;
-    border: none;
-    border-radius: 6px;
-    background: var(--primary);
-    color: white;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 6px;
-}
-
-.btn:hover { background: var(--primary-hover); }
-.btn-success { background: var(--accent-green); }
-.btn-danger { background: var(--accent-red); }
-.btn-cyan { background: var(--accent-cyan); }
 
 .info-box {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid var(--border-glass);
-    border-radius: 6px;
+    background: #1e293b;
     padding: 8px;
-    font-size: 11px;
-    line-height: 1.6;
-    color: #38bdf8;
+    border-radius: 4px;
+    border-right: 3px solid #38bdf8;
+    font-size: 0.8rem;
 }
 
-/* ساختار نقشه‌های دوتایی ۲D/۳D */
+/* Map Viewport Area */
 .map-viewport-container {
     flex: 1;
     height: 100%;
-    width: 100%;
-    display: flex;
     position: relative;
+    display: flex;
 }
 
 .map-pane {
     height: 100%;
     position: relative;
-    transition: all 0.3s ease;
-}
-
-#map-2d {
-    width: 100%;
     flex: 1;
 }
 
-#map-3d {
-    width: 0%;
-    display: none;
-    flex: 1;
-    background: #000;
+#map-2d { display: block; }
+#map-3d { display: none; }
+
+/* Split View Modes */
+.mode-split #map-2d, .mode-split #map-3d {
+    display: block !important;
+    width: 50% !important;
 }
 
-.map-viewport-container.mode-split #map-2d { width: 50%; display: block; }
-.map-viewport-container.mode-split #map-3d { width: 50%; display: block; }
-.map-viewport-container.mode-3d #map-2d { width: 0%; display: none; }
-.map-viewport-container.mode-3d #map-3d { width: 100%; display: block; }
+.mode-3d #map-2d { display: none !important; }
+.mode-3d #map-3d { display: block !important; width: 100% !important; }
 
-/* دکمه‌های شناور بیس‌لایر مجزا برای ۲D و ۳D */
-.base-map-floater-2d {
+.mode-2d #map-2d { display: block !important; width: 100% !important; }
+.mode-2d #map-3d { display: none !important; }
+
+/* Elevation Panel - Floating Overlay Fix */
+.elevation-panel {
     position: absolute;
-    top: 15px;
-    left: 15px;
-    z-index: 1000;
+    bottom: 30px;
+    left: 20px;
+    right: 20px;
+    height: 220px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid #0284c7;
+    border-radius: 8px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 15px;
+    box-shadow: 0 -4px 25px rgba(0,0,0,0.5);
 }
 
-.base-map-floater-3d {
+.elevation-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #38bdf8;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    font-size: 1.4rem;
+    cursor: pointer;
+}
+
+.elevation-chart-container {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 130px;
+}
+
+.elevation-stats-bar {
+    display: flex;
+    justify-content: space-around;
+    background: #1e293b;
+    padding: 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    margin-top: 5px;
+}
+
+.elevation-stats-bar b {
+    color: #38bdf8;
+}
+
+/* Floating BaseMap Controls */
+.floater-btn {
     position: absolute;
     top: 15px;
     right: 15px;
     z-index: 1000;
-}
-
-.floater-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background: var(--bg-glass);
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--border-glass);
+    background: #1e293b;
     color: #fff;
-    font-size: 18px;
+    border: 1px solid #475569;
+    padding: 8px 12px;
+    border-radius: 6px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .floater-dropdown {
-    display: none;
     position: absolute;
-    top: 50px;
-    left: 0;
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-glass);
-    border-radius: 12px;
-    padding: 8px;
-    width: 240px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    z-index: 1005;
+    top: 55px;
+    right: 15px;
+    z-index: 1000;
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    display: none;
+    flex-direction: column;
+    min-width: 180px;
+    overflow: hidden;
 }
 
-.floater-dropdown.right-aligned {
-    left: auto;
-    right: 0;
-}
-
-.floater-dropdown.show { display: block; }
+.floater-dropdown.show { display: flex; }
 
 .base-item {
     padding: 8px 12px;
-    font-size: 12px;
-    border-radius: 6px;
     cursor: pointer;
+    font-size: 0.85rem;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.base-item:hover { background: rgba(255,255,255,0.15); }
-.base-item.active { background: var(--primary); font-weight: bold; }
-
-.print-btn-floater {
-    position: absolute;
-    top: 68px;
-    left: 15px;
-    z-index: 1000;
+.base-item:hover, .base-item.active {
+    background: #0284c7;
+    color: #fff;
 }
 
-/* نوار وضعیت مختصات مرکز پایین */
+/* Status Bar */
 .status-bar-center {
     position: absolute;
-    bottom: 15px;
+    bottom: 5px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-glass);
-    border-radius: 30px;
-    padding: 6px 18px;
-    z-index: 999;
+    background: rgba(15, 23, 42, 0.85);
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
     display: flex;
-    align-items: center;
     gap: 15px;
-    font-size: 11px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-    direction: ltr;
+    z-index: 1000;
+    border: 1px solid #334155;
+    pointer-events: none;
 }
 
-.coord-badge {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.coord-badge span { color: var(--text-secondary); font-weight: 600; }
-.coord-badge strong { color: #38bdf8; font-family: monospace; font-size: 11px; }
-
-/* استایل شیشه‌ای Leaflet Draw */
-.leaflet-left .leaflet-draw {
-    margin-left: 15px !important;
-    margin-top: 120px !important;
-}
-
-.leaflet-draw-toolbar a {
-    background-color: var(--bg-glass) !important;
-    backdrop-filter: blur(15px) !important;
-    border: 1px solid var(--border-glass) !important;
-    border-radius: 8px !important;
-    margin-bottom: 5px !important;
-    color: #fff !important;
-}
-
-.leaflet-draw-toolbar a:hover {
-    background-color: rgba(255, 255, 255, 0.2) !important;
+.sidebar-toggle-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+    background: #1e293b;
+    color: #fff;
+    border: 1px solid #475569;
+    padding: 8px 10px;
+    border-radius: 4px;
+    cursor: pointer;
 }
