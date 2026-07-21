@@ -1,5 +1,5 @@
 /**
- * گام ۴: ماژول زلزله و پایش بلایای طبیعی (USGS Earthquake API)
+ * ماژول زلزله و بلایای طبیعی USGS
  */
 export function initDisasterModule(map) {
     const eqLayerGroup = L.layerGroup().addTo(map);
@@ -20,16 +20,15 @@ export function initDisasterModule(map) {
             const data = await res.json();
 
             if (data && data.features) {
-                document.getElementById('eq-count').innerText = data.features.length;
+                const countElem = document.getElementById('eq-count');
+                if (countElem) countElem.innerText = data.features.length;
 
                 L.geoJSON(data, {
                     pointToLayer: (feature, latlng) => {
                         const mag = feature.properties.mag;
-                        
-                        // تعیین رنگ و اندازه بر اساس بزرگای زلزله
-                        let color = '#10b981'; // سبز برای زلزله‌های کوچک
-                        if (mag >= 3.0) color = '#f59e0b'; // نارنجی
-                        if (mag >= 5.0) color = '#ef4444'; // قرمز شدید
+                        let color = '#10b981';
+                        if (mag >= 3.0) color = '#f59e0b';
+                        if (mag >= 5.0) color = '#ef4444';
 
                         return L.circleMarker(latlng, {
                             radius: Math.max(mag * 2.5, 4),
@@ -66,9 +65,6 @@ export function initDisasterModule(map) {
                 map.removeLayer(eqLayerGroup);
             }
         });
-        
-        // بارگذاری اولیه
-        loadEarthquakes();
     }
 
     if (selectMag) {
