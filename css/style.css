@@ -1,14 +1,15 @@
 :root {
-    --bg-glass: rgba(10, 16, 30, 0.65);
+    --bg-glass: rgba(10, 16, 30, 0.75);
     --bg-card: rgba(255, 255, 255, 0.05);
-    --border-glass: rgba(255, 255, 255, 0.15);
+    --border-glass: rgba(255, 255, 255, 0.18);
     --primary: #3b82f6;
     --primary-hover: #2563eb;
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
     --accent-green: #10b981;
     --accent-red: #ef4444;
-    --sidebar-width: 360px;
+    --accent-cyan: #06b6d4;
+    --sidebar-width: 380px;
 }
 
 * {
@@ -34,7 +35,7 @@ body, html {
     overflow: hidden;
 }
 
-/* ساختار سایدبار فوق‌شیشه‌ای */
+/* ساختار سایدبار فوق‌شیشه‌ای جئواینت */
 .sidebar {
     width: var(--sidebar-width);
     height: 100%;
@@ -90,6 +91,20 @@ body, html {
 .sidebar-header h2 {
     font-size: 15px;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.radar-icon {
+    color: #38bdf8;
+    animation: pulse-radar 2s infinite ease-in-out;
+}
+
+@keyframes pulse-radar {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
 }
 
 .text-accent { color: var(--primary); }
@@ -103,7 +118,40 @@ body, html {
     gap: 12px;
 }
 
-/* سبک آکاردئون */
+/* سوئیچ دکمه‌های ۲D / ۳D / Dual */
+.view-mode-selector {
+    display: flex;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.view-btn {
+    flex: 1;
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.view-btn.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* آکاردئون‌ها */
 .accordion-item {
     background: var(--bg-card);
     border: 1px solid var(--border-glass);
@@ -117,7 +165,7 @@ body, html {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
     user-select: none;
 }
@@ -187,6 +235,7 @@ body, html {
 .btn:hover { background: var(--primary-hover); }
 .btn-success { background: var(--accent-green); }
 .btn-danger { background: var(--accent-red); }
+.btn-cyan { background: var(--accent-cyan); }
 
 .info-box {
     background: rgba(0,0,0,0.4);
@@ -198,19 +247,50 @@ body, html {
     color: #38bdf8;
 }
 
-/* ساختار نقشه اصلی */
-.map-container {
+/* ساختار نقشه‌های دوتایی ۲D/۳D */
+.map-viewport-container {
     flex: 1;
     height: 100%;
     width: 100%;
+    display: flex;
     position: relative;
 }
 
-/* دکمه‌های شناور سمت چپ بالا */
-.base-map-floater {
+.map-pane {
+    height: 100%;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+#map-2d {
+    width: 100%;
+    flex: 1;
+}
+
+#map-3d {
+    width: 0%;
+    display: none;
+    flex: 1;
+    background: #000;
+}
+
+.map-viewport-container.mode-split #map-2d { width: 50%; display: block; }
+.map-viewport-container.mode-split #map-3d { width: 50%; display: block; }
+.map-viewport-container.mode-3d #map-2d { width: 0%; display: none; }
+.map-viewport-container.mode-3d #map-3d { width: 100%; display: block; }
+
+/* دکمه‌های شناور بیس‌لایر مجزا برای ۲D و ۳D */
+.base-map-floater-2d {
     position: absolute;
     top: 15px;
     left: 15px;
+    z-index: 1000;
+}
+
+.base-map-floater-3d {
+    position: absolute;
+    top: 15px;
+    right: 15px;
     z-index: 1000;
 }
 
@@ -240,8 +320,14 @@ body, html {
     border: 1px solid var(--border-glass);
     border-radius: 12px;
     padding: 8px;
-    width: 230px;
+    width: 240px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 1005;
+}
+
+.floater-dropdown.right-aligned {
+    left: auto;
+    right: 0;
 }
 
 .floater-dropdown.show { display: block; }
@@ -266,7 +352,7 @@ body, html {
     z-index: 1000;
 }
 
-/* نوار وضعیت مختصات در وسط پایین صفحه */
+/* نوار وضعیت مختصات مرکز پایین */
 .status-bar-center {
     position: absolute;
     bottom: 15px;
@@ -295,7 +381,7 @@ body, html {
 .coord-badge span { color: var(--text-secondary); font-weight: 600; }
 .coord-badge strong { color: #38bdf8; font-family: monospace; font-size: 11px; }
 
-/* استایل شیشه‌ای برای ابزارهای Leaflet Draw در سمت چپ */
+/* استایل شیشه‌ای Leaflet Draw */
 .leaflet-left .leaflet-draw {
     margin-left: 15px !important;
     margin-top: 120px !important;
