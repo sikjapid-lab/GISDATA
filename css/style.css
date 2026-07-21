@@ -1,25 +1,149 @@
+:root {
+    --bg-glass: rgba(18, 24, 38, 0.85);
+    --border-glass: rgba(255, 255, 255, 0.12);
+    --accent-color: #3b82f6;
+    --accent-hover: #2563eb;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Vazirmatn', sans-serif;
 }
 
-html, body, #map {
+body, html, .app-container {
     width: 100%;
     height: 100%;
-    font-family: Tahoma, 'Segoe UI', Geneva, Verdana, sans-serif;
+    overflow: hidden;
 }
 
-/* تنظیمات منوی کنترل لایه‌ها برای RTL */
-.leaflet-control-layers {
-    direction: rtl;
-    text-align: right;
-    font-size: 13px;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+.app-container {
+    display: flex;
+    position: relative;
 }
 
-.leaflet-control-layers-base label {
-    margin-bottom: 4px;
+/* Sidebar استایل تار و شیک */
+.sidebar {
+    width: 340px;
+    height: 100vh;
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-left: 1px solid var(--border-glass);
+    color: var(--text-main);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;
+    overflow-y: auto;
+    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border-glass);
+    padding-bottom: 15px;
+}
+
+.logo-icon {
+    font-size: 24px;
+    color: var(--accent-color);
+}
+
+.panel-section {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.panel-section h3 {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* رادیوباتن‌ها و چک‌باکس‌های سفارشی */
+.layer-radio, .layer-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
     cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.layer-radio:hover, .layer-checkbox:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* جستجو و دکمه‌های مسیریابی */
+.search-box {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.search-box input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-glass);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: #fff;
+    font-size: 12px;
+}
+
+.search-box button, .btn-route {
+    background: var(--accent-color);
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+.search-box button:hover, .btn-route:hover {
+    background: var(--accent-hover);
+}
+
+.routing-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.btn-danger {
+    background: #ef4444;
+}
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.color-green { color: #10b981; }
+.color-red { color: #f43f5e; }
+
+.route-info-box {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #38bdf8;
+}
+
+#map {
+    flex: 1;
+    height: 100vh;
 }
