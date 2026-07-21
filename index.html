@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سامانه جامع GIS و نقشه‌های پیشرفته</title>
+    <title>سامانه پیشرفته پایش و GIS متمرکز</title>
+    
+    <!-- Google Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -11,11 +15,50 @@
 </head>
 <body>
 
-    <div id="map"></div>
+    <div class="app-container">
+        <!-- Sidebar کنترلی -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-earth-americas logo-icon"></i>
+                <h2>سامانه GIS هوشمند</h2>
+            </div>
+
+            <!-- بخش بیس‌لایرها -->
+            <div class="panel-section">
+                <h3><i class="fa-solid fa-layer-group"></i> نقشه پایه (Base Map)</h3>
+                <div id="base-layers-container" class="layer-selector"></div>
+            </div>
+
+            <!-- بخش اورلایرها (ماژول‌ها) -->
+            <div class="panel-section">
+                <h3><i class="fa-solid fa-puzzle-piece"></i> ماژول‌های فعال (Overlays)</h3>
+                <div id="overlay-layers-container" class="layer-selector">
+                    <!-- ماژول‌ها گام به گام اینجا اضافه می‌شوند -->
+                </div>
+            </div>
+
+            <!-- پنل ویژه ماژول ۱: مسیریابی و ناوبری -->
+            <div class="panel-section" id="routing-panel">
+                <h3><i class="fa-solid fa-route"></i> مسیریابی و جستجو</h3>
+                <div class="search-box">
+                    <input type="text" id="geo-search-input" placeholder="جستجوی شهر یا مکان..." />
+                    <button id="geo-search-btn"><i class="fa-solid fa-search"></i></button>
+                </div>
+                <div class="routing-controls">
+                    <button id="btn-set-start" class="btn-route"><i class="fa-solid fa-location-dot color-green"></i> مبدا روی نقشه</button>
+                    <button id="btn-set-end" class="btn-route"><i class="fa-solid fa-flag-checkered color-red"></i> مقصد روی نقشه</button>
+                    <button id="btn-clear-route" class="btn-route btn-danger"><i class="fa-solid fa-trash"></i> پاک‌سازی</button>
+                </div>
+                <div id="route-info" class="route-info-box"></div>
+            </div>
+        </aside>
+
+        <!-- نقشه اصلی -->
+        <main id="map"></main>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Main Application Entry -->
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
