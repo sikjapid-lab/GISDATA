@@ -4,35 +4,48 @@ import { initTrafficModule } from './modules/traffic.js';
 import { initWeatherModule } from './modules/weather.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ۱. مقداردهی اولیه نقشه پایه
+    // ۱. مقداردهی اولیه نقشه
     const { map } = initMap();
 
-    // ۲. بارگذاری ماژول‌ها (به صورت ایمن)
-    try { initRoutingModule(map); } catch (e) { console.error('خطا در ماژول مسیریابی:', e); }
-    try { initTrafficModule(map); } catch (e) { console.error('خطا در ماژول ترافیک:', e); }
-    try { initWeatherModule(map); } catch (e) { console.error('خطا در ماژول هواشناسی:', e); }
+    // ۲. بارگذاری ماژول‌ها
+    initRoutingModule(map);
+    initTrafficModule(map);
+    initWeatherModule(map);
 
-    // ۳. راه اندازی منوی آکاردئونی سایدبار
-    const accordionHeaders = document.querySelectorAll('.accordion-header');
-    accordionHeaders.forEach(header => {
+    // ۳. مدیریت بستن سایدبار و Resize شدن کامل نقشه
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        
+        // به‌روزرسانی ابعاد Leaflet پس از انیمیشن جهت تمام صفحه شدن
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 300);
+    });
+
+    // ۴. منطق باز و بستن آکاردئون‌ها
+    document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
-            const item = header.parentElement;
-            
-            // بستن سایر بخش‌ها برای تمیز ماندن منو (اختیاری)
-            document.querySelectorAll('.accordion-item').forEach(i => {
-                if (i !== item) i.classList.remove('active');
-            });
-
-            item.classList.toggle('active');
+            header.parentElement.classList.toggle('active');
         });
     });
 
-    // ۴. منطق باز و بستن Sidebar
-    const toggleBtn = document.getElementById('sidebar-toggle');
-    const sidebar = document.getElementById('sidebar');
-    if (toggleBtn && sidebar) {
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-        });
-    }
+    // ۵. مدیریت ذخیره‌سازی کلیدهای API در localStorage
+    const owmInput = document.getElementById('api-owm');
+    const tomInput = document.getElementById('api-tomtom');
+    const orsInput = document.getElementById('api-ors');
+
+    // بارگذاری مقادیر قبلی
+    if (owmInput) owmInput.value = localStorage.getItem('API_OWM') || '';
+    if (tomInput) tomInput.value = localStorage.getItem('API_TOMTOM') || '';
+    if (orsInput) orsInput.value = localStorage.getItem('API_ORS') || '';
+
+    document.getElementById('btn-save-settings')?.addEventListener('click', () => {
+        localStorage.setItem('API_OWM', owmInput.value.trim());
+        localStorage.setItem('API_TOMTOM', tomInput.value.trim());
+        localStorage.setItem('API_ORS', orsInput.value.trim());
+        alert('تنظیمات و کلیدهای API با موفقیت ذخیره شدند.');
+    });
 });
