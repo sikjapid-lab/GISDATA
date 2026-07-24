@@ -1,5 +1,5 @@
 /* js/modules/routing.js */
-import { syncLayerTo3D } from '../map.js';
+import { linkMarkerAndEntity, unlinkEntity } from '../map.js';
 
 let startMarker = null, endMarker = null, routeLine = null;
 let start3DEntity = null, end3DEntity = null, route3DEntity = null;
@@ -32,10 +32,12 @@ export function initRoutingModule(map2D, viewer3D) {
         } else if (isSettingEnd) {
             setEndPoint(e.latlng, map2D, viewer3D);
             isSettingEnd = false;
+        } else {
+            return;
         }
 
         if (startMarker && endMarker) {
-            await calculateOSRMRoute(map2D, viewer3D);
+            await calculateRoute(map2D, viewer3D);
         }
     });
 
@@ -43,7 +45,18 @@ export function initRoutingModule(map2D, viewer3D) {
         const query = document.getElementById('geo-search-input').value;
         if (!query) return;
 
+        const tomtomKey = localStorage.getItem('apiTomTom') || '';
         try {
+            if (tomtomKey) {
+                const res = await fetch(`https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${tomtomKey}&limit=1&language=fa-FA`);
+                const data = await res.json();
+                if (data.results && data.results.length > 0) {
+                    const { lat, lon } = data.results[0].position;
+                    map2D.setView([lat, lon], 13);
+                    return;
+                }
+            }
+            // بازگشت به Nominatim (رایگان و بدون کلید) در نبود کلید یا نتیجه TomTom
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data && data.length > 0) {
@@ -59,70 +72,104 @@ export function initRoutingModule(map2D, viewer3D) {
 }
 
 function setStartPoint(latlng, map2D, viewer3D) {
-    if (startMarker) map2D.removeLayer(startMarker);
+    if (startMarker) { map2D.removeLayer(startMarker); if (start3DEntity) unlinkEntity(start3DEntity); }
     startMarker = L.marker(latlng, { title: "مبدأ" }).addTo(map2D).bindPopup("نقطه مبدأ").openPopup();
 
     if (viewer3D) {
         if (start3DEntity) viewer3D.entities.remove(start3DEntity);
         start3DEntity = viewer3D.entities.add({
+            name: 'نقطه مبدأ مسیر',
             position: Cesium.Cartesian3.fromDegrees(latlng.lng, latlng.lat),
-            point: { pixelSize: 12, color: Cesium.Color.GREEN }
+            point: { pixelSize: 12, color: Cesium.Color.GREEN },
+            description: `<div style="direction:rtl;">نقطه مبدأ مسیر (${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)})</div>`
         });
+        linkMarkerAndEntity(startMarker, start3DEntity, viewer3D);
     }
 }
 
 function setEndPoint(latlng, map2D, viewer3D) {
-    if (endMarker) map2D.removeLayer(endMarker);
+    if (endMarker) { map2D.removeLayer(endMarker); if (end3DEntity) unlinkEntity(end3DEntity); }
     endMarker = L.marker(latlng, { title: "مقصد" }).addTo(map2D).bindPopup("نقطه مقصد").openPopup();
 
     if (viewer3D) {
         if (end3DEntity) viewer3D.entities.remove(end3DEntity);
         end3DEntity = viewer3D.entities.add({
+            name: 'نقطه مقصد مسیر',
             position: Cesium.Cartesian3.fromDegrees(latlng.lng, latlng.lat),
-            point: { pixelSize: 12, color: Cesium.Color.RED }
+            point: { pixelSize: 12, color: Cesium.Color.RED },
+            description: `<div style="direction:rtl;">نقطه مقصد مسیر (${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)})</div>`
         });
+        linkMarkerAndEntity(endMarker, end3DEntity, viewer3D);
     }
 }
 
-async function calculateOSRMRoute(map2D, viewer3D) {
+/** انتخاب موتور مسیریابی: در صورت وجود کلید TomTom از مسیریابی ترافیک-آگاه آن استفاده می‌شود، در غیر این صورت OSRM رایگان */
+async function calculateRoute(map2D, viewer3D) {
     const p1 = startMarker.getLatLng();
     const p2 = endMarker.getLatLng();
-    const url = `https://router.project-osrm.org/route/v1/driving/${p1.lng},${p1.lat};${p2.lng},${p2.lat}?overview=full&geometries=geojson`;
+    const tomtomKey = localStorage.getItem('apiTomTom') || '';
+
+    let coords, distanceMeters, durationSeconds, engineLabel;
 
     try {
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data.routes && data.routes.length > 0) {
-            const route = data.routes[0];
-            const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-
-            if (routeLine) map2D.removeLayer(routeLine);
-            routeLine = L.polyline(coords, { color: '#0284c7', weight: 5 }).addTo(map2D);
-
-            document.getElementById('route-info').innerHTML = `
-                مسافت: <b>${(route.distance / 1000).toFixed(2)} کیلومتر</b><br>
-                زمان تقریبی: <b>${Math.round(route.duration / 60)} دقیقه</b>
-            `;
-
-            // نگاشت مسیر OSRM به ۳D Cesium
-            if (viewer3D) {
-                if (route3DEntity) viewer3D.entities.remove(route3DEntity);
-                const degreesArr = [];
-                route.geometry.coordinates.forEach(c => degreesArr.push(c[0], c[1]));
-
-                route3DEntity = viewer3D.entities.add({
-                    polyline: {
-                        positions: Cesium.Cartesian3.fromDegreesArray(degreesArr),
-                        width: 5,
-                        material: Cesium.Color.CYAN,
-                        clampToGround: true
-                    }
-                });
+        if (tomtomKey) {
+            const url = `https://api.tomtom.com/routing/1/calculateRoute/${p1.lat},${p1.lng}:${p2.lat},${p2.lng}/json?key=${tomtomKey}&traffic=true&travelMode=car`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.routes && data.routes.length > 0) {
+                const route = data.routes[0];
+                coords = route.legs.flatMap(leg => leg.points.map(p => [p.latitude, p.longitude]));
+                distanceMeters = route.summary.lengthInMeters;
+                durationSeconds = route.summary.travelTimeInSeconds;
+                engineLabel = 'TomTom (ترافیک‌آگاه)';
             }
         }
+
+        if (!coords) {
+            const url = `https://router.project-osrm.org/route/v1/driving/${p1.lng},${p1.lat};${p2.lng},${p2.lat}?overview=full&geometries=geojson`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.routes && data.routes.length > 0) {
+                const route = data.routes[0];
+                coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                distanceMeters = route.distance;
+                durationSeconds = route.duration;
+                engineLabel = 'OSRM';
+            }
+        }
+
+        if (!coords) return;
+
+        if (routeLine) map2D.removeLayer(routeLine);
+        routeLine = L.polyline(coords, { color: '#0284c7', weight: 5 }).bindPopup(
+            `مسافت: ${(distanceMeters / 1000).toFixed(2)} کیلومتر (${engineLabel})`
+        ).addTo(map2D);
+
+        document.getElementById('route-info').innerHTML = `
+            موتور مسیریابی: <b>${engineLabel}</b><br>
+            مسافت: <b>${(distanceMeters / 1000).toFixed(2)} کیلومتر</b><br>
+            زمان تقریبی: <b>${Math.round(durationSeconds / 60)} دقیقه</b>
+        `;
+
+        if (viewer3D) {
+            if (route3DEntity) { unlinkEntity(route3DEntity); viewer3D.entities.remove(route3DEntity); }
+            const degreesArr = [];
+            coords.forEach(c => degreesArr.push(c[1], c[0]));
+
+            route3DEntity = viewer3D.entities.add({
+                name: 'مسیر محاسبه‌شده',
+                polyline: {
+                    positions: Cesium.Cartesian3.fromDegreesArray(degreesArr),
+                    width: 5,
+                    material: Cesium.Color.CYAN,
+                    clampToGround: true
+                },
+                description: `<div style="direction:rtl;">موتور: ${engineLabel} | مسافت: ${(distanceMeters / 1000).toFixed(2)} کیلومتر | زمان: ${Math.round(durationSeconds / 60)} دقیقه</div>`
+            });
+            linkMarkerAndEntity(routeLine, route3DEntity, viewer3D);
+        }
     } catch (e) {
-        console.error("خطا در محاسبه مسیر OSRM:", e);
+        console.error("خطا در محاسبه مسیر:", e);
     }
 }
 
@@ -133,9 +180,9 @@ function clearRoute(map2D, viewer3D) {
     startMarker = null; endMarker = null; routeLine = null;
 
     if (viewer3D) {
-        if (start3DEntity) viewer3D.entities.remove(start3DEntity);
-        if (end3DEntity) viewer3D.entities.remove(end3DEntity);
-        if (route3DEntity) viewer3D.entities.remove(route3DEntity);
+        [start3DEntity, end3DEntity, route3DEntity].forEach(ent => {
+            if (ent) { unlinkEntity(ent); viewer3D.entities.remove(ent); }
+        });
         start3DEntity = null; end3DEntity = null; route3DEntity = null;
     }
 

@@ -173,26 +173,37 @@ body, html {
     display: flex;
 }
 
-.map-pane {
-    height: 100%;
-    position: relative;
-    flex: 1;
-}
+.map-pane { height: 100%; position: relative; flex: 1; display: none; }
 
-#map-2d { display: block; }
-#map-3d { display: none; }
+#map-2d, #map-3d { width: 100%; height: 100%; display: block; }
 
 /* Split View Modes */
-.mode-split #map-2d, .mode-split #map-3d {
+.mode-split #pane-2d, .mode-split #pane-3d {
     display: block !important;
     width: 50% !important;
 }
 
-.mode-3d #map-2d { display: none !important; }
-.mode-3d #map-3d { display: block !important; width: 100% !important; }
+.mode-3d #pane-2d { display: none !important; }
+.mode-3d #pane-3d { display: block !important; width: 100% !important; }
 
-.mode-2d #map-2d { display: block !important; width: 100% !important; }
-.mode-2d #map-3d { display: none !important; }
+.mode-2d #pane-2d { display: block !important; width: 100% !important; }
+.mode-2d #pane-3d { display: none !important; }
+
+.pane-label {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 999;
+    background: rgba(15, 23, 42, 0.75);
+    color: #94a3b8;
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    pointer-events: none;
+    border: 1px solid #334155;
+}
+
+/* موقعیت دکمه‌های چاپ/هم‌ترازی به‌صورت جداگانه، بعد از قانون پایه floater-btn تعریف می‌شود (پایین‌تر در این فایل) */
 
 /* Elevation Panel - Floating Overlay Fix */
 .elevation-panel {
@@ -282,6 +293,15 @@ body, html {
 
 .floater-dropdown.show { display: flex; }
 
+/* دکمه‌های چاپ و هم‌ترازی مجدد: عمداً در گوشه پایین-راستِ کل ناحیه نقشه (نه گوشه بالا که محل
+   دکمه‌های اختصاصی هر پنل برای نقشه پایه است) تا هرگز با آن‌ها یا با منوی بازشوی آن تداخل نداشته باشند */
+#btn-print-map, #btn-force-resync {
+    top: auto;
+    right: 15px;
+}
+#btn-print-map { bottom: 15px; }
+#btn-force-resync { bottom: 65px; }
+
 .base-item {
     padding: 8px 12px;
     cursor: pointer;
@@ -325,3 +345,133 @@ body, html {
     border-radius: 4px;
     cursor: pointer;
 }
+
+/* ============ افزوده‌های تکمیلی: فرم‌ها، دکمه‌ها و جزئیات گمشده ============ */
+.text-accent { color: #38bdf8; }
+
+.form-group { margin-bottom: 10px; }
+.form-group label {
+    display: block;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-bottom: 5px;
+}
+.form-label-title {
+    display: block;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.section-desc {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 6px;
+}
+.divider {
+    border: none;
+    border-top: 1px solid #334155;
+    margin: 12px 0;
+}
+
+.input-with-btn { display: flex; gap: 6px; }
+.input-with-btn .input-style { flex: 1; margin-top: 0; }
+.input-with-btn .btn { width: auto; padding: 8px 12px; margin-top: 0; }
+
+.button-group { display: flex; gap: 6px; }
+.button-group .btn { font-size: 0.78rem; padding: 8px 6px; }
+
+.filter-row { display: flex; gap: 6px; }
+.filter-row input.input-style { flex: 1; min-width: 0; }
+
+.btn-full { width: 100%; }
+.btn-primary { background: #0284c7; }
+.btn-primary:hover { background: #0369a1; }
+.btn-warning { background: #d97706; }
+.btn-warning:hover { background: #b45309; }
+
+.coord-badge { display: flex; gap: 4px; color: #cbd5e1; }
+.coord-badge span { color: #64748b; }
+
+/* ============ پنل هواشناسی: کارت شیشه‌ای مدرن (Glassmorphism) ============ */
+.leaflet-popup.wx-glass-popup .leaflet-popup-content-wrapper {
+    background: linear-gradient(155deg, rgba(30,41,59,0.82), rgba(15,23,42,0.88));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 20px;
+    border: 1px solid rgba(148,163,184,0.25);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    color: #f1f5f9;
+    padding: 0;
+}
+.leaflet-popup.wx-glass-popup .leaflet-popup-content { margin: 16px 18px; width: auto !important; }
+.leaflet-popup.wx-glass-popup .leaflet-popup-tip {
+    background: rgba(20,28,45,0.88);
+    box-shadow: none;
+}
+.leaflet-popup.wx-glass-popup a.leaflet-popup-close-button {
+    color: #94a3b8 !important;
+    font-size: 20px !important;
+    top: 8px !important;
+    left: 10px !important;
+    right: auto !important;
+}
+.leaflet-popup.wx-glass-popup a.leaflet-popup-close-button:hover { color: #f1f5f9 !important; }
+
+.wx-popup { font-family: 'Vazirmatn', sans-serif; direction: rtl; text-align: right; min-width: 250px; }
+.wx-popup .wx-loc { font-size: 0.7rem; color: #93a3b8; margin-bottom: 8px; opacity: 0.85; }
+.wx-popup .wx-current { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.wx-popup .wx-icon-big { font-size: 2.6rem; line-height: 1; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); }
+.wx-popup .wx-temp { font-size: 1.8rem; font-weight: 700; }
+.wx-popup .wx-desc { font-size: 0.78rem; color: #cbd5e1; margin-top: 2px; }
+.wx-popup .wx-meta {
+    display: flex; justify-content: space-between; gap: 6px;
+    font-size: 0.7rem; color: #cbd5e1;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 7px 10px; margin-bottom: 10px;
+}
+.wx-popup .wx-forecast { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 6px; }
+.wx-popup .wx-forecast::-webkit-scrollbar { height: 4px; }
+.wx-popup .wx-forecast::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+.wx-popup .wx-day {
+    min-width: 54px; text-align: center; font-size: 0.66rem;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 7px 3px; color: #e2e8f0; flex: 0 0 auto;
+}
+.wx-popup .wx-day .wx-day-icon { font-size: 1.35rem; margin: 4px 0; }
+.wx-popup .wx-marine {
+    margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 9px; font-size: 0.72rem; color: #5eead4; line-height: 1.9;
+}
+.wx-popup .wx-marine.na { color: #64748b; font-style: italic; }
+
+/* آیکون نشانگر هواشناسی سفارشی (ایموجی، بدون پس‌زمینه پیش‌فرض Leaflet) */
+.wx-marker-icon { background: transparent; border: none; text-align: center; }
+
+/* ============ حالت چاپ: مخفی‌سازی پنل‌ها و کنترل‌های شناور ============ */
+@media print {
+    .sidebar, .sidebar-toggle-btn, .base-map-floater, .print-btn-floater, .resync-btn-floater,
+    .status-bar-center, .leaflet-control-container, .elevation-panel {
+        display: none !important;
+    }
+    .app-layout, .map-viewport-container, #map-2d, #map-3d {
+        width: 100% !important;
+        height: 100% !important;
+    }
+}
+
+/* ============ هماهنگ‌سازی ظاهر قاب بیرونی InfoBox سه‌بعدی Cesium با تم برنامه ============ */
+.cesium-infoBox {
+    background: rgba(15, 23, 42, 0.92) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(148,163,184,0.25) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important;
+    overflow: hidden;
+}
+.cesium-infoBox-title {
+    background: rgba(2, 132, 199, 0.35) !important;
+    font-family: 'Vazirmatn', sans-serif !important;
+}
+.cesium-infoBox-iframe { background: transparent !important; }

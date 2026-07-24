@@ -8,17 +8,20 @@
     <!-- فونت وزین وزیرمتن و آیکون‌های FontAwesome -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <!-- کتابخانه‌های Leaflet و Leaflet Draw CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-    
+
+    <!-- Cesium (نقشه سه‌بعدی) -->
+    <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.116/Build/Cesium/Widgets/widgets.css">
+
     <!-- استایل اختصاصی برنامه -->
     <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-    <div class="app-layout">
+    <div class="app-layout mode-split" id="app-layout">
         <!-- دکمه باز و بستن پنل اصلی -->
         <button id="sidebar-toggle" class="sidebar-toggle-btn" title="مدیریت پنل">
             <i class="fa-solid fa-bars"></i>
@@ -31,7 +34,14 @@
             </div>
 
             <div class="sidebar-content">
-                
+
+                <!-- سوئیچ حالت نمایش نقشه: دو بعدی / همزمان / سه بعدی -->
+                <div class="view-mode-selector">
+                    <button id="btn-mode-2d" class="view-btn" title="فقط نقشه دو بعدی"><i class="fa-solid fa-map"></i> ۲بعدی</button>
+                    <button id="btn-mode-split" class="view-btn active" title="نمایش همزمان و همگام"><i class="fa-solid fa-table-columns"></i> همزمان</button>
+                    <button id="btn-mode-3d" class="view-btn" title="فقط نقشه سه بعدی"><i class="fa-solid fa-cube"></i> ۳بعدی</button>
+                </div>
+
                 <!-- ۱. مسیریابی و جستجو -->
                 <div class="accordion-item active">
                     <div class="accordion-header">
@@ -65,15 +75,14 @@
                     </div>
                     <div class="accordion-content">
                         <div class="form-group">
-                            <label>انتخاب نقشه پایه (Base Map):</label>
-                            <select id="select-base-map-sidebar" class="input-style">
-                                <option value="osm">OpenStreetMap</option>
-                                <option value="google-sat">Google Satellite</option>
-                                <option value="google-hybrid">Google Hybrid</option>
-                                <option value="dark">CartoDB Dark</option>
-                                <option value="esri-sat">Esri World Imagery</option>
-                            </select>
+                            <label>نقشه پایه پنل دو بعدی:</label>
+                            <select id="select-base-map-2d" class="input-style"></select>
                         </div>
+                        <div class="form-group">
+                            <label>نقشه پایه پنل سه بعدی:</label>
+                            <select id="select-base-map-3d" class="input-style"></select>
+                        </div>
+                        <p class="section-desc">هر پنل نقشه پایه مستقل خود را دارد؛ فقط محدوده و زوم دو نقشه هم‌گام می‌مانند.</p>
                         <hr class="divider">
                         <label class="form-label-title">لایه‌های حمایتی و پوششی:</label>
                         <label class="layer-checkbox">
@@ -100,10 +109,15 @@
                         </label>
                         <label class="layer-checkbox" style="margin-top: 8px;">
                             <input type="checkbox" id="chk-traffic-tomtom">
-                            <span>ترافیک TomTom Flow</span>
+                            <span>ترافیک زنده TomTom Flow</span>
                         </label>
-                        <div class="info-box" style="margin-top: 10px;">
-                            برای فعال‌سازی ترافیک TomTom نیاز به کلید API معتبر در بخش تنظیمات دارید.
+                        <label class="layer-checkbox" style="margin-top: 8px;">
+                            <input type="checkbox" id="chk-traffic-tomtom-incidents">
+                            <span>حوادث ترافیکی TomTom (تصادف، انسداد، ...)</span>
+                        </label>
+                        <p class="section-desc" style="margin-top:6px;">با فعال بودن لایه حوادث، روی هر نقطه از نقشه کلیک کنید تا نزدیک‌ترین حادثه ثبت‌شده نمایش داده شود.</p>
+                        <div id="traffic-info-box" class="info-box" style="margin-top: 10px;">
+                            برای فعال‌سازی خدمات TomTom نیاز به کلید API معتبر در بخش «تنظیمات» دارید.
                         </div>
                     </div>
                 </div>
@@ -116,19 +130,40 @@
                     </div>
                     <div class="accordion-content">
                         <label class="layer-checkbox">
+                            <input type="checkbox" id="chk-weather-pin-mode">
+                            <span>فعال‌سازی کلیک هواشناسی روی نقشه</span>
+                        </label>
+                        <p class="section-desc" style="margin-top:6px;">با فعال بودن این گزینه، با کلیک روی هر نقطه از نقشه (۲بعدی یا ۳بعدی)، وضعیت جوی لحظه‌ای، پیش‌بینی ۷ روزه و وضعیت دریا/امواج آن نقطه نمایش داده می‌شود.</p>
+
+                        <hr class="divider">
+                        <label class="form-label-title">نقشه‌های ویژه هواشناسی (نیازمند کلید OpenWeatherMap):</label>
+                        <label class="layer-checkbox">
                             <input type="checkbox" id="chk-weather-radar">
-                            <span>رادار بارش زنده (RainViewer Radar)</span>
+                            <span>رادار بارش زنده (RainViewer)</span>
                         </label>
                         <label class="layer-checkbox" style="margin-top:8px;">
                             <input type="checkbox" id="chk-weather-clouds">
-                            <span>پوشش ابر جهان (OWM Clouds)</span>
+                            <span>پوشش ابر (Clouds)</span>
                         </label>
                         <label class="layer-checkbox" style="margin-top:8px;">
                             <input type="checkbox" id="chk-weather-temp">
-                            <span>نقشه دمایی جهان (OWM Temp)</span>
+                            <span>نقشه دمایی (Temperature)</span>
                         </label>
+                        <label class="layer-checkbox" style="margin-top:8px;">
+                            <input type="checkbox" id="chk-weather-precip">
+                            <span>نقشه بارش (Precipitation)</span>
+                        </label>
+                        <label class="layer-checkbox" style="margin-top:8px;">
+                            <input type="checkbox" id="chk-weather-wind">
+                            <span>نقشه باد (Wind Speed)</span>
+                        </label>
+                        <label class="layer-checkbox" style="margin-top:8px;">
+                            <input type="checkbox" id="chk-weather-pressure">
+                            <span>نقشه فشار هوا (Pressure)</span>
+                        </label>
+
                         <div id="weather-info-box" class="info-box" style="margin-top: 10px;">
-                            جهت مشاهده اطلاعات کامل هواشناسی بر روی نقطه مورد نظر در نقشه کلیک کنید.
+                            جهت مشاهده اطلاعات کامل هواشناسی، تیک «فعال‌سازی کلیک هواشناسی» را بزنید و روی نقطه مورد نظر در نقشه کلیک کنید.
                         </div>
                     </div>
                 </div>
@@ -171,7 +206,22 @@
                             <button id="btn-draw-polyline" class="btn"><i class="fa-solid fa-draw-polygon"></i> ترسیم خط / خطوط</button>
                             <button id="btn-draw-polygon" class="btn"><i class="fa-solid fa-vector-square"></i> ترسیم چندضلعی</button>
                         </div>
-                        <button id="btn-clear-drawings" class="btn btn-danger btn-full" style="margin-top: 5px;"><i class="fa-solid fa-eraser"></i> پاک‌سازی ترسیمات</button>
+                        <button id="btn-elevation-profile" class="btn btn-cyan btn-full" style="margin-top: 5px;"><i class="fa-solid fa-chart-area"></i> پروفایل ارتفاعی مسیر ترسیم‌شده</button>
+
+                        <hr class="divider">
+                        <label class="form-label-title"><i class="fa-solid fa-eye"></i> تحلیل دیدگاه (Viewshed / خط دید):</label>
+                        <div class="form-group">
+                            <label>شعاع تحلیل (متر):</label>
+                            <input type="number" id="input-buffer-radius" class="input-style" placeholder="مثلاً 5000" value="5000">
+                        </div>
+                        <div class="form-group">
+                            <label>ارتفاع ناظر از سطح زمین (متر):</label>
+                            <input type="number" id="input-viewshed-height" class="input-style" placeholder="مثلاً 1.7" value="1.7">
+                        </div>
+                        <button id="btn-draw-buffer" class="btn btn-full"><i class="fa-solid fa-circle-dot"></i> رسم ویوشید با کلیک روی نقشه</button>
+                        <div id="analysis-info-box" class="info-box" style="margin-top: 8px;"></div>
+
+                        <button id="btn-clear-drawings" class="btn btn-danger btn-full" style="margin-top: 10px;"><i class="fa-solid fa-eraser"></i> پاک‌سازی همه ترسیمات (۲بعدی و ۳بعدی)</button>
                         <div id="measure-output" class="info-box" style="margin-top: 10px;">
                             نتایج محاسبه مساحت و محیط در اینجا درج خواهد شد.
                         </div>
@@ -193,6 +243,42 @@
                     </div>
                 </div>
 
+                <!-- ۹. جستجوی عوارض طبیعی و مصنوعی (Overpass API) -->
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span><i class="fa-solid fa-magnifying-glass-location"></i> ۹. جستجوی عوارض طبیعی و مصنوعی</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="form-group">
+                            <label>دسته‌بندی تخصصی عوارض:</label>
+                            <select id="feature-tree-menu" class="input-style"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>کلمه کلیدی یا برچسب دستی (OSM tag):</label>
+                            <input type="text" id="feature-keyword-input" class="input-style" placeholder="مثلاً: پل، پادگان، رادار...">
+                        </div>
+                        <label class="form-label-title">فیلتر ابعاد سازه (متر — صفر یعنی غیرفعال):</label>
+                        <div class="filter-row">
+                            <input type="number" id="feature-length-filter" class="input-style" placeholder="طول" min="0" value="0">
+                            <input type="number" id="feature-width-filter" class="input-style" placeholder="عرض" min="0" value="0">
+                            <input type="number" id="feature-height-filter" class="input-style" placeholder="ارتفاع" min="0" value="0">
+                        </div>
+                        <div class="form-group" style="margin-top:8px;">
+                            <label>حالت ترکیب فیلترها:</label>
+                            <select id="feature-filter-mode" class="input-style">
+                                <option value="or">OR — کافیست یک شرط برقرار باشد</option>
+                                <option value="and">AND — همه شرط‌ها باید برقرار باشند</option>
+                            </select>
+                        </div>
+                        <p class="section-desc">۱) با ابزار رسم (گوشه بالا-چپ نقشه دو بعدی، بخش «۶. اندازه‌گیری») یک محدوده مستطیلی یا چندضلعی بکشید. ۲) دسته‌بندی یا کلمه کلیدی را تعیین کنید. ۳) دکمه جستجو را بزنید.</p>
+                        <button id="btn-run-feature-search" class="btn btn-primary btn-full"><i class="fa-solid fa-magnifying-glass"></i> اجرای جستجو در محدوده رسم‌شده</button>
+                        <button id="btn-export-feature-excel" class="btn btn-full" style="display:none; margin-top:6px;"><i class="fa-solid fa-file-excel"></i> دانلود خروجی اکسل</button>
+                        <button id="btn-clear-feature-search" class="btn btn-danger btn-full" style="margin-top:6px;"><i class="fa-solid fa-eraser"></i> پاک‌سازی نتایج جستجو</button>
+                        <div id="feature-search-info" class="info-box" style="margin-top:8px;">برای شروع، یک محدوده روی نقشه رسم کنید و دسته‌بندی یا کلمه کلیدی را انتخاب نمایید.</div>
+                    </div>
+                </div>
+
                 <!-- ۸. تنظیمات سیستم و کلیدهای API -->
                 <div class="accordion-item">
                     <div class="accordion-header">
@@ -202,29 +288,54 @@
                     <div class="accordion-content">
                         <div class="form-group">
                             <label>OpenWeatherMap API Key:</label>
-                            <input type="text" id="api-owm" class="input-style" placeholder="کلید اختصاصی OWM..." />
+                            <input type="text" id="api-owm" class="input-style" placeholder="کلید اختصاصی OWM (برای نقشه‌های ویژه هواشناسی)..." />
                         </div>
                         <div class="form-group">
                             <label>TomTom API Key:</label>
-                            <input type="text" id="api-tomtom" class="input-style" placeholder="کلید اختصاصی TomTom..." />
+                            <input type="text" id="api-tomtom" class="input-style" placeholder="کلید اختصاصی TomTom (برای ترافیک زنده)..." />
+                        </div>
+                        <div class="form-group">
+                            <label>Cesium Ion Access Token (اختیاری):</label>
+                            <input type="text" id="api-cesium-ion" class="input-style" placeholder="برای مدل زمین سه‌بعدی با کیفیت بالاتر..." />
                         </div>
                         <button id="btn-save-settings" class="btn btn-success btn-full"><i class="fa-solid fa-floppy-disk"></i> ذخیره تنظیمات در سیستم</button>
+                        <button id="btn-clear-settings" class="btn btn-danger btn-full" style="margin-top:6px;"><i class="fa-solid fa-trash"></i> پاک‌سازی کلیدهای ذخیره‌شده</button>
+                        <div id="settings-status" class="info-box" style="margin-top: 10px;">کلیدها به‌صورت محلی و امن در مرورگر شما ذخیره می‌شوند.</div>
                     </div>
                 </div>
 
             </div>
         </aside>
 
-        <!-- نقشه اصلی -->
-        <main class="map-container" id="map">
-            
-            <!-- منوی شناور تغییر نقشه پایه (گوشه بالا سمت چپ) -->
-            <div class="base-map-floater">
-                <button id="btn-base-map-toggle" class="floater-btn" title="تغییر سریع نقشه پایه">
-                    <i class="fa-solid fa-layer-group"></i>
-                </button>
-                <div id="base-map-dropdown" class="floater-dropdown"></div>
+        <!-- ناحیه نقشه‌ها -->
+        <div class="map-viewport-container">
+
+            <div class="map-pane" id="pane-2d">
+                <div id="map-2d"></div>
+                <div class="pane-label">۲بعدی</div>
+                <div class="base-map-floater">
+                    <button id="btn-base-map-toggle-2d" class="floater-btn" title="تغییر نقشه پایه پنل دو بعدی">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </button>
+                    <div id="base-map-dropdown-2d" class="floater-dropdown"></div>
+                </div>
             </div>
+
+            <div class="map-pane" id="pane-3d">
+                <div id="map-3d"></div>
+                <div class="pane-label">۳بعدی</div>
+                <div class="base-map-floater">
+                    <button id="btn-base-map-toggle-3d" class="floater-btn" title="تغییر نقشه پایه پنل سه بعدی">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </button>
+                    <div id="base-map-dropdown-3d" class="floater-dropdown"></div>
+                </div>
+            </div>
+
+            <!-- دکمه هم‌ترازی مجدد دستی دو نقشه (شبکه اطمینان در صورت هرگونه انحراف جزئی) -->
+            <button id="btn-force-resync" class="floater-btn resync-btn-floater" title="هم‌ترازی مجدد دقیق دو نقشه">
+                <i class="fa-solid fa-arrows-to-eye"></i>
+            </button>
 
             <!-- دکمه اختصاصی چاپ و خروجی تصویر -->
             <button id="btn-print-map" class="floater-btn print-btn-floater" title="چاپ یا خروجی نقشه">
@@ -243,13 +354,39 @@
                     <span>UTM:</span> <strong id="coord-utm">Z0 N | E:0 N:0</strong>
                 </div>
             </div>
-        </main>
+
+            <!-- پنل پروفایل ارتفاعی -->
+            <div class="elevation-panel" id="elevation-profile-panel" style="display:none;">
+                <div class="elevation-panel-header">
+                    <span><i class="fa-solid fa-mountain-sun"></i> پروفایل ارتفاعی مسیر</span>
+                    <button id="btn-close-elevation" class="close-btn" title="بستن">&times;</button>
+                </div>
+                <div class="elevation-chart-container">
+                    <canvas id="elevationChart"></canvas>
+                </div>
+                <div class="elevation-stats-bar">
+                    <span>حداقل ارتفاع: <b id="stat-min">0</b> متر</span>
+                    <span>حداکثر ارتفاع: <b id="stat-max">0</b> متر</span>
+                    <span>مجموع صعود: <b id="stat-gain">0</b> متر</span>
+                    <span>طول مسیر: <b id="stat-length">0</b> کیلومتر</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Leaflet & Plugin Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-    
+
+    <!-- Cesium (نقشه سه‌بعدی) -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.116/Build/Cesium/Cesium.js"></script>
+
+    <!-- Chart.js برای پروفایل ارتفاعی -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- SheetJS برای خروجی اکسل نتایج جستجوی عوارض -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <!-- اسکریپت اصلی برنامه با ساختار ماژولار -->
     <script type="module" src="js/app.js"></script>
 </body>
